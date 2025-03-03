@@ -68,11 +68,11 @@
                                 </div>
                             </div>
                             <div class="col-sm-6 col-lg-4">
-                                <label for="base_fare_per_km" class="form-label">{{ translate('Fare_(Per_km)') }}</label>
+                                <label for="base_fare_per_km" class="form-label">{{ translate('Fare_(Per_mile)') }}</label>
                                 <div class="input-group_tooltip">
                                     <input type="number" class="form-control part-1-input copy-value" step=".01"
                                         min="0.01" max="99999999" name="base_fare_per_km"
-                                        placeholder="{{ translate('Fare_(Per_km)') }}" id="base_fare_per_km"
+                                        placeholder="{{ translate('Fare_(Per_mile)') }}" id="base_fare_per_km"
                                         value="{{ $defaultTripFare->base_fare_per_km ?? 0 }}" required>
                                     <i class="bi bi-info-circle-fill text-primary tooltip-icon" data-bs-toggle="tooltip"
                                         data-bs-title="{{ translate('set_the_fare_(per_km)_which_will_be_added_with_the_base_fare') }}"></i>
@@ -232,7 +232,7 @@
                                                 <td>
                                                     <div class="d-flex align-items-center gap-2 text-primary fw-semibold">
                                                         <div class="text-capitalize">
-                                                            {{ translate('fare_per_km') }}
+                                                            {{ translate('fare_per_mile') }}
                                                             ({{ session()->get('currency_symbol') ?? '$' }})
                                                         </div>
                                                         <i class="bi bi-info-circle-fill fs-14" data-bs-toggle="tooltip"
