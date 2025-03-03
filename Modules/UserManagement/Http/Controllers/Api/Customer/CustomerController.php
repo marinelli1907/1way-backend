@@ -2,9 +2,10 @@
 
 namespace Modules\UserManagement\Http\Controllers\Api\Customer;
 
-use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 use Modules\UserManagement\Entities\User;
@@ -57,12 +58,24 @@ class CustomerController extends Controller
             'identification_number' => 'sometimes',
             'identity_images' => 'sometimes|array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:10000',
+            'music_preference' => 'nullable',
         ]);
 
         if ($validator->fails()) {
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
         }
-
+        // dd($request);
+        // dd($request->all());
+        // dd($this->customer);
+        // $this->customer->update([
+        //     'music_preference' => $request->input('music_preference')
+        // ], $request->user()->id);
+        if(isset($request->music_preference)){
+            DB::table('users')->where('id', $request->user()->id)->update(['music_preference' => $request->music_preference]);
+        }
+        if(isset($request->ac_preference)){
+            DB::table('users')->where('id', $request->user()->id)->update(['ac_preference' => $request->ac_preference]);
+        }
         $this->customer->update(attributes: $request->all(), id: $request->user()->id);
 
         //Mart profile update

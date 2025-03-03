@@ -25,11 +25,14 @@ class TripFareService extends BaseService implements TripFareServiceInterface
     public function create(array $data): ?Model
     {
         DB::beginTransaction();
+
         $last_query = [];
         $defaultTripFareData = [
             "zone_id" => $data['zone_id'],
             "base_fare" => $data['base_fare'] ?? 0,
             "base_fare_per_km" => $data['base_fare_per_km'] ?? 0,
+            "fare_time_per_minute" => $data['fare_time_per_minute'] ?? 0,
+            "fare_pet" => $data['fare_pet'] ?? 0,
             "waiting_fee_per_min" => $data['waiting_fee'] ?? 0,
             "cancellation_fee_percent" => $data['cancellation_fee'] ?? 0,
             "min_cancellation_fee" => $data['min_cancellation_fee'] ?? 0,
@@ -62,6 +65,8 @@ class TripFareService extends BaseService implements TripFareServiceInterface
                         "zone_id" => $data['zone_id'],
                         "base_fare" => $data['base_fare'] ?? 0,
                         "base_fare_per_km" => $data['base_fare_per_km'] ?? 0,
+                        "fare_time_per_minute" => $data['fare_time_per_minute'] ?? 0,
+                        "fare_pet" => $data['fare_pet'] ?? 0,
                         "waiting_fee_per_min" => $data['waiting_fee'] ?? 0,
                         "cancellation_fee_percent" => $data['cancellation_fee'] ?? 0,
                         "min_cancellation_fee" => $data['min_cancellation_fee'] ?? 0,
@@ -78,6 +83,8 @@ class TripFareService extends BaseService implements TripFareServiceInterface
                         "zone_id" => $data['zone_id'],
                         "base_fare" => $data['base_fare_' . $vehicleCategories->id] ?? 0,
                         "base_fare_per_km" => $data['base_fare_per_km_' . $vehicleCategories->id] ?? 0,
+                        "fare_time_per_minute" => $data['fare_time_per_minute_' . $vehicleCategories->id] ?? 0,
+                        "fare_pet" => $data['fare_pet_' . $vehicleCategories->id] ?? 0,
                         "waiting_fee_per_min" => $data['waiting_fee_' . $vehicleCategories->id] ?? 0,
                         "cancellation_fee_percent" => $data['cancellation_fee_' . $vehicleCategories->id] ?? 0,
                         "min_cancellation_fee" => $data['min_cancellation_fee_' . $vehicleCategories->id] ?? 0,

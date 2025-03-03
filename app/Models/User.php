@@ -165,7 +165,8 @@ class User extends Authenticatable
             'identification_image',
             'other_documents',
             'date_of_birth',
-            'profile_image'
+            'profile_image',
+            'music_preference'
         ];
 
         $complete = collect($attributes)

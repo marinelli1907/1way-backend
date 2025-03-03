@@ -31,6 +31,7 @@ class CustomerProfileUpdateApiRequest extends FormRequest
             'identification_number' => 'sometimes',
             'identity_images' => 'sometimes|array',
             'identity_images.*' => 'image|mimes:jpeg,jpg,png,gif,webp|max:10000',
+            'music_preference' => 'nullable',
         ];
     }
 

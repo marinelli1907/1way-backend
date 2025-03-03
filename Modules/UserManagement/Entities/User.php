@@ -37,6 +37,8 @@ class User extends Authenticatable
         'other_documents',
         'profile_image',
         'fcm_token',
+        'music_preference',
+        'ac_preference',
         'phone_verified_at',
         'email_verified_at',
         'loyalty_points',

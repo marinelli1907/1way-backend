@@ -53,6 +53,8 @@ class TripFareRepository implements TripFareInterface
         $defaultTripFare->zone_id = $attributes['zone_id'];
         $defaultTripFare->base_fare = $attributes['base_fare'] ?? 0;
         $defaultTripFare->base_fare_per_km = $attributes['base_fare_per_km'] ?? 0;
+        $defaultTripFare->fare_time_per_minute = $attributes['fare_time_per_minute'] ?? 0;
+        $defaultTripFare->fare_pet = $attributes['fare_pet'] ?? 0;
         $defaultTripFare->waiting_fee_per_min = $attributes['waiting_fee'] ?? 0;
         $defaultTripFare->cancellation_fee_percent = $attributes['cancellation_fee'] ?? 0;
         $defaultTripFare->min_cancellation_fee = $attributes['min_cancellation_fee'] ?? 0;
@@ -86,6 +88,8 @@ class TripFareRepository implements TripFareInterface
                 if ($attributes['category_wise_different_fare'] == 0) {
                     $tripFare->base_fare = $attributes['base_fare'] ?? 0;
                     $tripFare->base_fare_per_km = $attributes['base_fare_per_km'] ?? 0;
+                    $tripFare->fare_time_per_minute = $attributes['fare_time_per_minute'] ?? 0;
+                    $tripFare->fare_pet = $attributes['fare_pet'] ?? 0;
                     $tripFare->waiting_fee_per_min = $attributes['waiting_fee'] ?? 0;
                     $tripFare->cancellation_fee_percent = $attributes['cancellation_fee'] ?? 0;
                     $tripFare->min_cancellation_fee = $attributes['min_cancellation_fee'] ?? 0;
@@ -96,6 +100,8 @@ class TripFareRepository implements TripFareInterface
                 } else {
                     $tripFare->base_fare = $attributes['base_fare_' . $vehicleCategories->id] ?? 0;
                     $tripFare->base_fare_per_km = $attributes['base_fare_per_km_' . $vehicleCategories->id] ?? 0;
+                    $tripFare->fare_time_per_minute = $attributes['fare_time_per_minute_' . $vehicleCategories->id] ?? 0;
+                    $tripFare->fare_pet = $attributes['fare_pet_' . $vehicleCategories->id] ?? 0;
                     $tripFare->waiting_fee_per_min = $attributes['waiting_fee_' . $vehicleCategories->id] ?? 0;
                     $tripFare->cancellation_fee_percent = $attributes['cancellation_fee_' . $vehicleCategories->id] ?? 0;
                     $tripFare->min_cancellation_fee = $attributes['min_cancellation_fee_' . $vehicleCategories->id] ?? 0;

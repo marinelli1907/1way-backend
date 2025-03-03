@@ -79,6 +79,28 @@
                                 </div>
                             </div>
                             <div class="col-sm-6 col-lg-4">
+                                <label for="fare_time_per_minute" class="form-label">{{ translate('Fare_(time_per_minute)') }}</label>
+                                <div class="input-group_tooltip">
+                                    <input type="number" class="form-control part-1-input copy-value" step=".01"
+                                        min="0.01" max="99999999" name="fare_time_per_minute"
+                                        placeholder="{{ translate('Fare_(per_min)') }}" id="fare_time_per_minute"
+                                        value="{{ $defaultTripFare->fare_time_per_minute ?? 0 }}" required>
+                                    <i class="bi bi-info-circle-fill text-primary tooltip-icon" data-bs-toggle="tooltip"
+                                        data-bs-title="{{ translate('set_the_fare_(per_min)_which_will_be_added_with_the_base_fare') }}"></i>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-lg-4">
+                                <label for="fare_pet" class="form-label">{{ translate('Fare_(Pet)') }}</label>
+                                <div class="input-group_tooltip">
+                                    <input type="number" class="form-control part-1-input copy-value" step=".01"
+                                        min="0.01" max="99999999" name="fare_pet"
+                                        placeholder="{{ translate('Fare_(pet)') }}" id="fare_pet"
+                                        value="{{ $defaultTripFare->fare_pet ?? 0 }}" required>
+                                    <i class="bi bi-info-circle-fill text-primary tooltip-icon" data-bs-toggle="tooltip"
+                                        data-bs-title="{{ translate('set_the_fare_(pet)_which_will_be_added_with_the_base_fare') }}"></i>
+                                </div>
+                            </div>
+                            <div class="col-sm-6 col-lg-4">
                                 <label for="cancellation_fee"
                                     class="form-label">{{ translate('Cancellation_Fee_(%)') }}</label>
                                 <div class="input-group_tooltip">
@@ -230,6 +252,66 @@
                                                             name="base_fare_per_km_{{ $vehicleCategory->id }}"
                                                             class="form-control base_fare_per_km_default part-2-input {{ $vehicleCategory->id }}"
                                                             value="{{ $trip?->base_fare_per_km ? round($trip->base_fare_per_km, 2) : 0 }}"
+                                                            {{ $vehicleCategory->id == $trip?->vehicle_category_id ? '' : 'readonly' }}>
+                                                    </td>
+                                                @empty
+                                                @endforelse
+
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-2 text-primary fw-semibold">
+                                                        <div class="text-capitalize">
+                                                            {{ translate('fare_per_minute') }}
+                                                            ({{ session()->get('currency_symbol') ?? '$' }})
+                                                        </div>
+                                                        <i class="bi bi-info-circle-fill fs-14" data-bs-toggle="tooltip"
+                                                            data-bs-title="{{ translate('set_the_fare_for_each_minute_added_with_the_base_fare') }}"></i>
+                                                    </div>
+                                                </td>
+                                                <td><input readonly type="number"
+                                                        class="form-control fare_time_per_minut"
+                                                        value="{{ $defaultTripFare->fare_time_per_minute ?? 0 }}">
+                                                </td>
+                                                @forelse($vehicleCategories as $vehicleCategory)
+                                                    @php($trip = $tripFares?->firstWhere('vehicle_category_id', $vehicleCategory->id))
+                                                    <td
+                                                        class="{{ $vehicleCategory->id }} {{ $vehicleCategory->id == $trip?->vehicle_category_id ? '' : 'd-none' }}">
+                                                        <input type="number" step=".01" min=".01"
+                                                            max="99999999"
+                                                            name="fare_time_per_minute_{{ $vehicleCategory->id }}"
+                                                            class="form-control fare_time_per_minute_default part-2-input {{ $vehicleCategory->id }}"
+                                                            value="{{ $trip?->fare_time_per_minute ? round($trip->fare_time_per_minute, 2) : 0 }}"
+                                                            {{ $vehicleCategory->id == $trip?->vehicle_category_id ? '' : 'readonly' }}>
+                                                    </td>
+                                                @empty
+                                                @endforelse
+
+                                            </tr>
+                                            <tr>
+                                                <td>
+                                                    <div class="d-flex align-items-center gap-2 text-primary fw-semibold">
+                                                        <div class="text-capitalize">
+                                                            {{ translate('fare_pet') }}
+                                                            ({{ session()->get('currency_symbol') ?? '$' }})
+                                                        </div>
+                                                        <i class="bi bi-info-circle-fill fs-14" data-bs-toggle="tooltip"
+                                                            data-bs-title="{{ translate('set_the_fare_for_pet_added_with_the_base_fare') }}"></i>
+                                                    </div>
+                                                </td>
+                                                <td><input readonly type="number"
+                                                        class="form-control fare_pet"
+                                                        value="{{ $defaultTripFare->fare_pet ?? 0 }}">
+                                                </td>
+                                                @forelse($vehicleCategories as $vehicleCategory)
+                                                    @php($trip = $tripFares?->firstWhere('vehicle_category_id', $vehicleCategory->id))
+                                                    <td
+                                                        class="{{ $vehicleCategory->id }} {{ $vehicleCategory->id == $trip?->vehicle_category_id ? '' : 'd-none' }}">
+                                                        <input type="number" step=".01" min=".01"
+                                                            max="99999999"
+                                                            name="fare_pet_{{ $vehicleCategory->id }}"
+                                                            class="form-control fare_pet part-2-input {{ $vehicleCategory->id }}"
+                                                            value="{{ $trip?->fare_pet ? round($trip->fare_pet, 2) : 0 }}"
                                                             {{ $vehicleCategory->id == $trip?->vehicle_category_id ? '' : 'readonly' }}>
                                                     </td>
                                                 @empty

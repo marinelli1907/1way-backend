@@ -20,6 +20,8 @@ class TripFare extends Model
         'vehicle_category_id',
         'base_fare',
         'base_fare_per_km',
+        'fare_time_per_minute',
+        'fare_pet',
         'waiting_fee_per_min',
         'cancellation_fee_percent',
         'min_cancellation_fee',
