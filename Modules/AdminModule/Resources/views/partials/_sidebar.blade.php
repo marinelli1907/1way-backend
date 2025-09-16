@@ -401,6 +401,23 @@
                         <!-- End Sub Menu -->
                     </li>
 
+                    <li class="has-sub-item {{Request::is('admin/customer/waitlist/show*') || Request::is('admin/customer/waitlist')? 'active sub-menu-opened' : ''}}">
+                        <a href="#">
+                            <i class="bi bi-people-fill"></i>
+                            <span class="link-title text-capitalize">{{translate('waitlist')}}</span>
+                        </a>
+                        <!-- Sub Menu -->
+                        <ul class="nav sub-menu">
+                            <li class="{{Request::is('admin/customer/waitlist') || Request::is('admin/customer/waitlist/show*')? 'active open' : ''}}">
+                                <a class="text-capitalize" href="{{route('admin.customer.waitlist.index')}}">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('waitlist_list')}}
+                                </a>
+                            </li>
+                        </ul>
+                        <!-- End Sub Menu -->
+                    </li>
+
                     <li class="{{Request::is('admin/customer/wallet*')? 'active open' : ''}}">
                         <a href="{{route('admin.customer.wallet.index')}}">
                             <i class="bi bi-wallet-fill"></i>

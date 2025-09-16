@@ -2,16 +2,17 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\CashCollectController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerLevelController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerWalletController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\DriverController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\DriverLevelController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\WithdrawalController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\WithdrawRequestController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Employee\EmployeeController;
-use Modules\UserManagement\Http\Controllers\Web\New\Admin\Employee\EmployeeRoleController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\LevelAccessController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\DriverController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\WaitlistController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\WithdrawalController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Employee\EmployeeController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\DriverLevelController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Employee\EmployeeRoleController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerLevelController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\WithdrawRequestController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerWalletController;
 
 /*
 |--------------------------------------------------------------------------
@@ -44,6 +45,27 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
             Route::get('restore/{id}', 'restore')->name('restore');
             Route::get('get-level-wise-customer', 'getLevelWiseCustomer')->name('get-level-wise-customer');
             Route::delete('permanent-delete/{id}', 'permanentDelete')->name('permanent-delete');
+        });
+        Route::group(['prefix' => 'waitlist', 'as' => 'waitlist.'], function () {
+            Route::controller(WaitlistController::class)->group(function () {
+                Route::get('/', 'index')->name('index');
+                Route::get('create', 'create')->name('create');
+                Route::post('store', 'store')->name('store');
+                Route::get('edit/{id}', 'edit')->name('edit');
+                Route::get('show/{id}', 'show')->name('show');
+                Route::delete('delete/{id}', 'destroy')->name('delete');
+                Route::put('update/{id}', 'update')->name('update');
+                Route::get('update-status', 'updateStatus')->name('update-status');
+                Route::get('get-all-ajax', 'getAllAjax')->name('get-all-ajax');
+                Route::get('statistics', 'statistics')->name('statistics');
+                Route::get('log', 'log')->name('log');
+                Route::get('export', 'export')->name('export');
+                Route::get('transaction-export/{id}', 'customerTransactionExport')->name('transaction-export');
+                Route::get('trash', 'trash')->name('trash');
+                Route::get('restore/{id}', 'restore')->name('restore');
+                Route::get('get-level-wise-customer', 'getLevelWiseCustomer')->name('get-level-wise-customer');
+                Route::delete('permanent-delete/{id}', 'permanentDelete')->name('permanent-delete');
+            });
         });
         Route::group(['prefix' => 'level', 'as' => 'level.'], function () {
             Route::controller(CustomerLevelController::class)->group(function () {

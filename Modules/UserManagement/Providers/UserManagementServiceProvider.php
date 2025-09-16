@@ -6,6 +6,11 @@ use Illuminate\Support\ServiceProvider;
 use Illuminate\Database\Eloquent\Factory;
 use Modules\UserManagement\Entities\Role;
 use Modules\UserManagement\Observers\RoleObserver;
+use Modules\UserManagement\Service\WaitlistService;
+use Modules\UserManagement\Repositories\WaitlistRepository;
+use Modules\UserManagement\Repository\WaitlistRepositoryInterface;
+use Modules\UserManagement\Service\Interface\WaitlistServiceInterface;
+
 
 class UserManagementServiceProvider extends ServiceProvider
 {
@@ -41,6 +46,17 @@ class UserManagementServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->register(RouteServiceProvider::class);
+        // Bind Waitlist repo
+        $this->app->bind(
+            WaitlistRepositoryInterface::class,
+            WaitlistRepository::class
+        );
+
+        // Bind Waitlist service
+        $this->app->bind(
+            WaitlistServiceInterface::class,
+            WaitlistService::class
+        );
     }
 
     /**
