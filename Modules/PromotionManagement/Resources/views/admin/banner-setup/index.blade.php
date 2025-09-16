@@ -55,7 +55,7 @@
                                                        accept=".jpg, .jpeg, .png, .webp" required>
                                                 <div class="upload-file__img upload-file__img_banner">
                                                     <img
-                                                        src="{{ asset('public/assets/admin-module/img/media/banner-upload-file.png') }}"
+                                                        src="{{ asset('assets/admin-module/img/media/banner-upload-file.png') }}"
                                                         alt="">
                                                 </div>
                                             </div>
@@ -204,7 +204,7 @@
                                         <img src="{{ onErrorImage(
                                                 $banner?->image,
                                                 asset('storage/app/public/promotion/banner') . '/' . $banner?->image,
-                                                asset('public/assets/admin-module/img/media/banner-upload-file.png'),
+                                                asset('assets/admin-module/img/media/banner-upload-file.png'),
                                                 'promotion/banner/',
                                             ) }}"
                                              class="custom-box-size-banner rounded dark-support" alt="">
@@ -271,7 +271,7 @@
                                         <div
                                             class="d-flex flex-column justify-content-center align-items-center gap-2 py-3">
                                             <img
-                                                src="{{ asset('public/assets/admin-module/img/empty-icons/no-data-found.svg') }}"
+                                                src="{{ asset('assets/admin-module/img/empty-icons/no-data-found.svg') }}"
                                                 alt="" width="100">
                                             <p class="text-center">{{translate('no_data_available')}}</p>
                                         </div>
@@ -293,7 +293,7 @@
 @endsection
 
 @push('script')
-    <script src="{{ asset('public/assets/admin-module/js/promotion-management/banner-setup/index.js') }}"></script>
+    <script src="{{ asset('assets/admin-module/js/promotion-management/banner-setup/index.js') }}"></script>
     <script>
         "use strict";
 

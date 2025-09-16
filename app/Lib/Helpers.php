@@ -955,7 +955,7 @@ if (!function_exists('getExtensionIcon')) {
     function getExtensionIcon($document)
     {
         $extension = pathinfo($document, PATHINFO_EXTENSION);
-        $asset = asset('public/assets/admin-module/img/file-format/svg');
+        $asset = asset('assets/admin-module/img/file-format/svg');
         return match ($extension) {
             'pdf' => $asset . '/pdf.svg',
             'cvc' => $asset . '/cvc.svg',
@@ -967,7 +967,7 @@ if (!function_exists('getExtensionIcon')) {
             'png' => $asset . '/png.svg',
             'xls' => $asset . '/xls.svg',
             'xlsx' => $asset . '/xlsx.svg',
-            default => asset('public/assets/admin-module/img/document-upload.png'),
+            default => asset('assets/admin-module/img/document-upload.png'),
         };
     }
 }

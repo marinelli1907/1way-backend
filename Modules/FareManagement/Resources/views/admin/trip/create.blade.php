@@ -462,7 +462,7 @@
 @endsection
 
 @push('script')
-    <script src="{{ asset('public/assets/admin-module/js/fare-management/trip/create.js') }}"></script>
+    <script src="{{ asset('assets/admin-module/js/fare-management/trip/create.js') }}"></script>
 
     <script>
         "use strict";

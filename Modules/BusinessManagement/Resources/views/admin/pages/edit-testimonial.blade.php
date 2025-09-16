@@ -93,7 +93,7 @@
                                                 </span>
                                                 <div class="upload-file__img">
                                                     <img
-                                                        src="{{ $data?->value['reviewer_image'] ? asset('storage/app/public/business/landing-pages/testimonial/'.$data?->value['reviewer_image'])  :  asset('public/assets/admin-module/img/media/upload-file.png') }}"
+                                                        src="{{ $data?->value['reviewer_image'] ? asset('storage/app/public/business/landing-pages/testimonial/'.$data?->value['reviewer_image'])  :  asset('assets/admin-module/img/media/upload-file.png') }}"
                                                         alt="">
                                                 </div>
                                             </div>

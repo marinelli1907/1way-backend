@@ -77,7 +77,7 @@
                                                        accept=".jpg, .jpeg, .png, .webp" required>
                                                 <div class="upload-file__img upload-file__img_banner">
                                                     <img
-                                                        src="{{ asset('public/assets/admin-module/img/media/banner-upload-file.png') }}"
+                                                        src="{{ asset('assets/admin-module/img/media/banner-upload-file.png') }}"
                                                         alt="">
                                                 </div>
                                             </div>
@@ -252,7 +252,7 @@
 @endsection
 
 @push('script')
-    <script src="{{asset('public/assets/admin-module/js/promotion-management/discount-setup/create.js')}}"></script>
+    <script src="{{asset('assets/admin-module/js/promotion-management/discount-setup/create.js')}}"></script>
 
     <script>
         "use strict";

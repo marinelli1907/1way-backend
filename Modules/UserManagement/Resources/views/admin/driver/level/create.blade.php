@@ -3,7 +3,7 @@
 @section('title', translate('Add_Driver_Level'))
 
 @push('css_or_js')
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/plugins/swiper@11/swiper-bundle.min.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/plugins/swiper@11/swiper-bundle.min.css') }}"/>
 
 @endpush
 @section('content')
@@ -26,7 +26,7 @@
             </div>
             <div class="alert alert--primary d-flex align-items-center alert-dismissible gap-1 justify-content-center"
                  role="alert" id="driverLevelHint">
-                <img src="{{asset('public/assets/admin-module/img/hint.png')}}" alt="hint" width="18" height="18">
+                <img src="{{asset('assets/admin-module/img/hint.png')}}" alt="hint" width="18" height="18">
                 <div class="w-50px flex-grow-1">
                     {{translate('At present, there is only one level available, which is the default level. When a driver logs in to the app for the first time, they will automatically be assigned the default level.')}}
                 </div>
@@ -83,7 +83,7 @@
                                                                    accept="image/png" required>
                                                             <div class="upload-file__img w-auto h-auto">
                                                                 <img width="150"
-                                                                     src="{{asset('public/assets/admin-module/img/media/upload-file.png')}}"
+                                                                     src="{{asset('assets/admin-module/img/media/upload-file.png')}}"
                                                                      alt="">
                                                             </div>
                                                         </div>
@@ -311,8 +311,8 @@
 @endsection
 
 @push('script')
-    <script src="{{ asset('public/assets/admin-module/plugins/swiper@11/swiper-bundle.min.js') }}"></script>
-    <script src="{{ asset('public/assets/admin-module/js/level/level.js') }}"></script>
+    <script src="{{ asset('assets/admin-module/plugins/swiper@11/swiper-bundle.min.js') }}"></script>
+    <script src="{{ asset('assets/admin-module/js/level/level.js') }}"></script>
     <script>
         "use strict";
 

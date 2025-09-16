@@ -84,7 +84,7 @@
                                                        accept="image/png, image/jpeg, image/jpg, image/webp" required>
                                                 <div class="upload-file__img">
                                                     <img
-                                                        src="{{ asset('public/assets/admin-module/img/media/upload-file.png') }}"
+                                                        src="{{ asset('assets/admin-module/img/media/upload-file.png') }}"
                                                         alt="">
                                                 </div>
                                             </div>
@@ -127,7 +127,7 @@
                                                 <div
                                                     class="aspect-1 d-flex justify-content-center align-items-center overflow-hidden rounded w-50px">
                                                     <img class="h-100 fit-object"
-                                                         src="{{ $testimonial?->value['reviewer_image'] ? asset('storage/app/public/business/landing-pages/testimonial/'.$testimonial?->value['reviewer_image']) : asset('public/assets/admin-module/img/media/bike.png') }}"
+                                                         src="{{ $testimonial?->value['reviewer_image'] ? asset('storage/app/public/business/landing-pages/testimonial/'.$testimonial?->value['reviewer_image']) : asset('assets/admin-module/img/media/bike.png') }}"
                                                          alt="">
                                                 </div>
                                             </div>

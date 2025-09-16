@@ -140,7 +140,7 @@
                                                        accept="image/png, image/jpeg, image/jpg, image/webp" required>
                                                 <div class="upload-file__img" style="--size: 11rem;">
                                                     <img alt=""
-                                                         src="{{ asset('public/assets/admin-module/img/media/upload-file.png') }}">
+                                                         src="{{ asset('assets/admin-module/img/media/upload-file.png') }}">
                                                 </div>
                                             </div>
                                         </div>
@@ -181,7 +181,7 @@
                                             <div
                                                 class="aspect-1 d-flex align-items-center overflow-hidden rounded w-50px">
                                                 <img class="h-100 fit-object"
-                                                     src="{{ $singleSolution?->value['image'] ? asset('storage/app/public/business/landing-pages/our-solutions/'.$singleSolution?->value['image']) : asset('public/assets/admin-module/img/media/bike.png') }}"
+                                                     src="{{ $singleSolution?->value['image'] ? asset('storage/app/public/business/landing-pages/our-solutions/'.$singleSolution?->value['image']) : asset('assets/admin-module/img/media/bike.png') }}"
                                                      alt="">
                                             </div>
 
@@ -226,7 +226,7 @@
                                             <div
                                                 class="d-flex flex-column justify-content-center align-items-center gap-2 py-3">
                                                 <img
-                                                    src="{{ asset('public/assets/admin-module/img/empty-icons/no-data-found.svg') }}"
+                                                    src="{{ asset('assets/admin-module/img/empty-icons/no-data-found.svg') }}"
                                                     alt="" width="100">
                                                 <p class="text-center">{{translate('no_data_available')}}</p>
                                             </div>

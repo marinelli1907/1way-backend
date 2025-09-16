@@ -6,7 +6,7 @@
     <img src="{{onErrorImage(
                 $customer?->profile_image,
                 asset('storage/app/public/customer/profile') . '/' . $customer?->profile_image,
-                asset('public/assets/admin-module/img/avatar/avatar.png'),
+                asset('assets/admin-module/img/avatar/avatar.png'),
                 'customer/profile/',
             )}}"
          alt="">

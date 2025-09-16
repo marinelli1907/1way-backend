@@ -83,7 +83,7 @@
                                                 </span>
                                                 <div class="upload-file__img" style="--size: 11rem;">
                                                     <img
-                                                        src="{{ $data?->value['image'] ? asset('storage/app/public/business/landing-pages/our-solutions/'.$data?->value['image'])  :  asset('public/assets/admin-module/img/media/upload-file.png') }}"
+                                                        src="{{ $data?->value['image'] ? asset('storage/app/public/business/landing-pages/our-solutions/'.$data?->value['image'])  :  asset('assets/admin-module/img/media/upload-file.png') }}"
                                                         alt="">
                                                 </div>
                                             </div>

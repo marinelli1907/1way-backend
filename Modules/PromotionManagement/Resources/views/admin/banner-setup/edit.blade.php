@@ -65,7 +65,7 @@
                                                 <img src="{{ onErrorImage(
                                                     $banner?->image,
                                                     asset('storage/app/public/promotion/banner') . '/' . $banner?->image,
-                                                    asset('public/assets/admin-module/img/media/banner-upload-file.png'),
+                                                    asset('assets/admin-module/img/media/banner-upload-file.png'),
                                                     'promotion/banner/',
                                                 ) }}"
                                                      alt="">
@@ -129,7 +129,7 @@
 @endsection
 
 @push('script')
-    <script src="{{ asset('public/assets/admin-module/js/promotion-management/banner-setup/edit.js') }}"></script>
+    <script src="{{ asset('assets/admin-module/js/promotion-management/banner-setup/edit.js') }}"></script>
     <script>
         "use strict";
         $('#banner_form').submit(function (e) {

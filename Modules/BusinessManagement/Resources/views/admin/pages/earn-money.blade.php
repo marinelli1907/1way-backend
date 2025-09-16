@@ -93,7 +93,7 @@
                                                     <i class="bi bi-pencil-square text-primary"></i>
                                                 </span>
                                             <div class="upload-file__img">
-                                                <img src="{{ $data1?->value['image'] ? asset('storage/app/public/business/landing-pages/earn-money/'.$data1?->value['image']):asset('public/assets/admin-module/img/media/upload-file.png') }}"
+                                                <img src="{{ $data1?->value['image'] ? asset('storage/app/public/business/landing-pages/earn-money/'.$data1?->value['image']):asset('assets/admin-module/img/media/upload-file.png') }}"
                                                      alt="">
                                             </div>
                                         </div>

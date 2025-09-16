@@ -3,7 +3,7 @@
 @section('title', translate('notification'))
 
 @push('css_or_js')
-    <link rel="stylesheet" href="{{ asset('public/landing-page/assets/css/owl.min.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('landing-page/assets/css/owl.min.css') }}"/>
 @endpush
 
 @section('content')
@@ -237,7 +237,7 @@
 @endsection
 
 @push('script')
-    <script src="{{ asset('public/landing-page/assets/js/owl.min.js') }}"></script>
+    <script src="{{ asset('landing-page/assets/js/owl.min.js') }}"></script>
 
     <script>
         function initializeSlider() {

@@ -21,38 +21,38 @@
           href="{{ onErrorImage(
             $favicon,
             asset('storage/app/public/business') . '/' . $favicon,
-            asset('public/assets/admin-module/img/favicon.png'),
+            asset('assets/admin-module/img/favicon.png'),
             'business/',
         ) }}"/>
     <link rel="shortcut icon"
           href="{{ onErrorImage(
             $favicon,
             asset('storage/app/public/business') . '/' . $favicon,
-            asset('public/assets/admin-module/img/favicon.png'),
+            asset('assets/admin-module/img/favicon.png'),
             'business/',
         ) }}"/>
     <!-- Web Fonts -->
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/css/fonts/google.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/css/fonts/google.css') }}"/>
 
     <!-- ======= BEGIN GLOBAL MANDATORY STYLES ======= -->
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/css/bootstrap.min.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/css/bootstrap-icons.min.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/plugins/icon-set/style.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/css/bootstrap.min.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/css/bootstrap-icons.min.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/plugins/icon-set/style.css') }}"/>
     <link rel="stylesheet"
-          href="{{ asset('public/assets/admin-module/plugins/perfect-scrollbar/perfect-scrollbar.min.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/css/toastr.css') }}"/>
+          href="{{ asset('assets/admin-module/plugins/perfect-scrollbar/perfect-scrollbar.min.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/css/toastr.css') }}"/>
     <!-- ======= END BEGIN GLOBAL MANDATORY STYLES ======= -->
 
     <!-- ======= BEGIN PAGE LEVEL PLUGINS STYLES ======= -->
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/plugins/apex/apexcharts.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/plugins/select2/select2.min.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/plugins/apex/apexcharts.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/plugins/select2/select2.min.css') }}"/>
     <!-- ======= END BEGIN PAGE LEVEL PLUGINS STYLES ======= -->
 
-    <link href="{{ asset('public/assets/admin-module/css/intlTelInput.min.css') }}" rel="stylesheet"/>
+    <link href="{{ asset('assets/admin-module/css/intlTelInput.min.css') }}" rel="stylesheet"/>
 
     <!-- ======= MAIN STYLES ======= -->
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/css/style.css') }}"/>
-    <link rel="stylesheet" href="{{ asset('public/assets/admin-module/css/custom.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/css/style.css') }}"/>
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/css/custom.css') }}"/>
     @include('adminmodule::layouts.css')
     <!-- ======= END MAIN STYLES ======= -->
 
@@ -123,23 +123,23 @@
 
 <span class="system-default-country-code" data-value="{{ getSession('country_code') ?? 'us' }}"></span>
 
-<script src="{{ asset('public/assets/admin-module/js/firebase.min.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/firebase.min.js') }}"></script>
 @include('adminmodule::partials._firebase-script')
 <!-- ======= BEGIN GLOBAL MANDATORY SCRIPTS ======= -->
-<script src="{{ asset('public/assets/admin-module/js/jquery-3.6.0.min.js') }}"></script>
-<script src="{{ asset('public/assets/admin-module/js/bootstrap.bundle.min.js') }}"></script>
-<script src="{{ asset('public/assets/admin-module/plugins/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
-<script src="{{ asset('public/assets/admin-module/plugins/select2/select2.min.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/jquery-3.6.0.min.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ asset('assets/admin-module/plugins/perfect-scrollbar/perfect-scrollbar.min.js') }}"></script>
+<script src="{{ asset('assets/admin-module/plugins/select2/select2.min.js') }}"></script>
 {{-- TOASTR and SWEETALERT --}}
-<script src="{{ asset('public/assets/admin-module/js/sweet_alert.js') }}"></script>
-<script src="{{ asset('public/assets/admin-module/js/toastr.js') }}"></script>
-<script src="{{ asset('public/assets/admin-module/js/dev.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/sweet_alert.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/toastr.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/dev.js') }}"></script>
 
-<script src="{{ asset('public/assets/admin-module/js/intlTelInput.min.js') }}"></script>
-<script src="{{ asset('public/assets/admin-module/js/country-picker-init.js') }}"></script>
-<script src="{{ asset('public/assets/admin-module/js/main.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/intlTelInput.min.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/country-picker-init.js') }}"></script>
+<script src="{{ asset('assets/admin-module/js/main.js') }}"></script>
 <script>
-    window.onMultipleImageUploadBaseImage = "{{ asset('public/assets/admin-module/img/document-upload.png') }}";
+    window.onMultipleImageUploadBaseImage = "{{ asset('assets/admin-module/img/document-upload.png') }}";
     let onMultipleImageUploadSuccess = "{{ translate('image_added') }}";
     let onMultipleImageUploadExtensionError = "{{ translate('please_only_input_png_or_jpg_type_file') }}";
     let onMultipleImageUploadSizeError = "{{ translate('file_size_too_big') }}";
@@ -732,7 +732,7 @@
     function formAlertWarning(id, message) {
         Swal.fire({
             title: '{{ translate('warning') }}!',
-            imageUrl: '{{asset('public/assets/admin-module/img/warning.png')}}',
+            imageUrl: '{{asset('assets/admin-module/img/warning.png')}}',
             text: message,
             showCloseButton: true,
             showConfirmButton: false
@@ -1214,7 +1214,7 @@
 
     // Function to get the file icon
     function getFileIcon(fileName) {
-        const asset = "{{ asset('public/assets/admin-module/img/file-format/svg') }}";
+        const asset = "{{ asset('assets/admin-module/img/file-format/svg') }}";
         const extension = fileName.split('.').pop().toLowerCase();
         switch (extension) {
             case 'pdf':
@@ -1239,7 +1239,7 @@
             case 'xlsx':
                 return `${asset}/xlsx.svg`;
             default:
-                return "{{ asset('public/assets/admin-module/img/document-upload.png') }}";
+                return "{{ asset('assets/admin-module/img/document-upload.png') }}";
         }
     }
 
@@ -1308,7 +1308,7 @@
             const removeButton = document.createElement("div");
             removeButton.classList.add("file__value--remove", "fw-bold");
             removeButton.setAttribute("data-id", file.name);
-            removeButton.innerHTML = `<img src="{{ asset('public/assets/admin-module/img/icons/close-circle.svg') }}" alt="">`;
+            removeButton.innerHTML = `<img src="{{ asset('assets/admin-module/img/icons/close-circle.svg') }}" alt="">`;
 
             // Append everything to the file value div
             fileValueDiv.appendChild(fileIcon);

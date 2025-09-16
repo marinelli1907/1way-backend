@@ -104,7 +104,7 @@
                 </div>
                 <div class="modal-body">
                     <div class="text-center my-5">
-                        <img src="{{ asset('public/assets/admin-module/img/bell.png') }}">
+                        <img src="{{ asset('assets/admin-module/img/bell.png') }}">
                     </div>
                     <h5 class="modal-title my-3" id="instructionsModalLabel">{{ translate('Instructions') }}</h5>
                     <p>{{ translate('For configuring OTP in the Firebase, you must create a Firebase project first. If you haven’t created any project for your application yet, please create a project first.') }}
