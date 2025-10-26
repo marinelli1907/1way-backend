@@ -44,7 +44,7 @@ class PaymobController extends Controller
         }
         $this->payment = $payment;
         $this->user = $user;
-        $country = $this->config_values['supported_country'];
+        $country = $this->config_values['supported_country'] ?? null;
         if (array_key_exists($country, $this->supportedCountries)) {
             $this->base_url = $this->supportedCountries[$country];
         } else {

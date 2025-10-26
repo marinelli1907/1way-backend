@@ -2,26 +2,27 @@
 
 namespace Modules\TripManagement\Http\Controllers\Api;
 
-use App\Events\CustomerTripPaymentSuccessfulEvent;
-use App\Events\DriverPaymentReceivedEvent;
 use Exception;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Routing\Controller;
 use Illuminate\Routing\Redirector;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Modules\BusinessManagement\Entities\BusinessSetting;
+use Illuminate\Support\Facades\Log;
 use Modules\Gateways\Library\Payer;
-use Modules\Gateways\Library\Payment as PaymentInfo;
-use Modules\Gateways\Library\Receiver;
 use Modules\Gateways\Traits\Payment;
+use Illuminate\Http\RedirectResponse;
+use Modules\Gateways\Library\Receiver;
+use Illuminate\Support\Facades\Validator;
+use App\Events\DriverPaymentReceivedEvent;
+use Illuminate\Contracts\Foundation\Application;
+use App\Events\CustomerTripPaymentSuccessfulEvent;
+use Modules\Gateways\Library\Payment as PaymentInfo;
+use Modules\UserManagement\Lib\LevelUpdateCheckerTrait;
+use Modules\BusinessManagement\Entities\BusinessSetting;
+use Modules\UserManagement\Lib\LevelHistoryManagerTrait;
 use Modules\TransactionManagement\Traits\TransactionTrait;
 use Modules\TripManagement\Interfaces\TripRequestInterfaces;
-use Modules\UserManagement\Lib\LevelHistoryManagerTrait;
-use Modules\UserManagement\Lib\LevelUpdateCheckerTrait;
 
 class PaymentController extends Controller
 {
@@ -37,7 +38,7 @@ class PaymentController extends Controller
      * @param Request $request
      * @return Application|JsonResponse|RedirectResponse|Redirector
      */
-    public function digitalPayment(Request $request)
+    public function digitalPaymentOld(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'trip_request_id' => 'required',
@@ -92,6 +93,79 @@ class PaymentController extends Controller
         );
         $receiverInfo = new Receiver('receiver_name', 'example.png');
         $redirectLink = $this->generate_link($payer, $paymentInfo, $receiverInfo);
+
+        return redirect($redirectLink);
+    }
+
+    public function digitalPayment(Request $request)
+    {
+        // print('ok');
+        $validator = Validator::make($request->all(), [
+            'trip_request_id' => 'required',
+            'payment_method' => 'required|in:ssl_commerz,stripe,paypal,razor_pay,paystack,senang_pay,paymob_accept,flutterwave,paytm,paytabs,liqpay,mercadopago,bkash,fatoorah,xendit,amazon_pay,iyzi_pay,hyper_pay,foloosi,ccavenue,pvit,moncash,thawani,tap,viva_wallet,hubtel,maxicash,esewa,swish,momo,payfast,worldpay,sixcash'
+        ]);
+        // print_r($validator);
+        if ($validator->fails()) {
+            return response()->json(responseFormatter(DEFAULT_400, null, errorProcessor($validator)), 400);
+        }
+
+        $trip = $this->trip->getBy('id', $request->trip_request_id, ['relations' => ['customer.userAccount', 'fee', 'time', 'driver']]);
+        if (!$trip) return response()->json(responseFormatter(TRIP_REQUEST_404), 403);
+        if ($trip->payment_status == PAID) return response()->json(responseFormatter(DEFAULT_PAID_200));
+        // dd($trip);
+        // Update tips in trip and fee table
+        $tips = $request->tips ?? 0;
+        $trip->fee()->update(['tips' => $tips]);
+        $trip = $this->trip->update([
+            'column' => 'id',
+            'payment_method' => $request->payment_method,
+            'tips' => $tips,
+        ], $request->trip_request_id);
+        // dd($trip->estimated_fare);
+        $paymentAmount = $trip->estimated_fare + $tips;
+        // dd($paymentAmount);
+        $customer = $trip->customer;
+
+        $payer = new Payer(
+            name: $customer?->first_name,
+            email: $customer->email,
+            phone: $customer->phone,
+            address: ''
+        );
+
+        $additionalData = [
+            'business_name' => BusinessSetting::where(['key_name' => 'business_name'])->first()?->value,
+            'business_logo' => asset('storage/app/public/business') . '/' . BusinessSetting::where(['key_name' => 'header_logo'])->first()?->value,
+        ];
+
+        // Create the PaymentInfo instance (used by generate_link)
+        $paymentInfo = new PaymentInfo(
+            hook: 'tripRequestUpdate', // callback after payment
+            currencyCode: businessConfig('currency_code')?->value ?? 'USD',
+            paymentMethod: $request->payment_method,
+            paymentPlatform: 'mono',
+            payerId: $customer->id,
+            receiverId: '100',
+            additionalData: $additionalData,
+            paymentAmount: $paymentAmount,
+            externalRedirectLink: null,
+            attribute: 'trip',
+            attributeId: $request->trip_request_id
+        );
+
+        // dd($paymentInfo);
+        $receiverInfo = new Receiver('receiver_name', 'example.png');
+
+        /* 🔹 NEW LOGIC STARTS HERE 🔹 */
+        if ($request->payment_method === 'stripe') {
+            // For Stripe manual authorization — redirect to authorize view
+            // dd($request->payment_method);
+            $redirectLink = $this->generate_stripe_authorize_link($payer, $paymentInfo, $receiverInfo);
+        } else {
+            // For other gateways — fallback to your existing generate_link
+            $redirectLink = $this->generate_link($payer, $paymentInfo, $receiverInfo);
+        }
+        /* 🔹 NEW LOGIC ENDS HERE 🔹 */
 
         return redirect($redirectLink);
     }

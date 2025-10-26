@@ -1,11 +1,12 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Modules\TripManagement\Http\Controllers\Api\Customer\TripRequestController;
-use Modules\TripManagement\Http\Controllers\Api\Driver\TripRequestController as DriverTripController;
-use Modules\TripManagement\Http\Controllers\Api\New\Customer\ParcelRefundController;
-use Modules\TripManagement\Http\Controllers\Api\New\Customer\SafetyAlertController;
+use Modules\Gateways\Http\Controllers\StripePaymentController;
 use Modules\TripManagement\Http\Controllers\Api\PaymentController;
+use Modules\TripManagement\Http\Controllers\Api\Customer\TripRequestController;
+use Modules\TripManagement\Http\Controllers\Api\New\Customer\SafetyAlertController;
+use Modules\TripManagement\Http\Controllers\Api\New\Customer\ParcelRefundController;
+use Modules\TripManagement\Http\Controllers\Api\Driver\TripRequestController as DriverTripController;
 
 /**
  * CUSTOMER API LIST
@@ -35,6 +36,7 @@ Route::group(['prefix' => 'customer', 'middleware' => ['auth:api', 'maintenance_
         Route::post('track-location', [DriverTripController::class, 'trackLocation']);
         Route::get('payment', [PaymentController::class, 'payment']);
         Route::get('digital-payment', [PaymentController::class, 'digitalPayment'])->withoutMiddleware('auth:api');
+        // Route::get('capture', [StripePaymentController::class, 'capturePayment'])->withoutMiddleware('auth:api');;
     });
     Route::group(['prefix' => 'parcel'], function () {
         Route::controller(ParcelRefundController::class)->group(function () {
