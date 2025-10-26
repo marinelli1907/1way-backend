@@ -16,6 +16,7 @@ const DENIED = 'denied';
 const REFUNDED = 'refunded';
 const SETTLED = 'settled';
 const PAID = 'paid';
+const HOLD = 'hold';
 const UNPAID = 'unpaid';
 const PARTIAL_PAID = 'partial_paid';
 const DUE = 'due';

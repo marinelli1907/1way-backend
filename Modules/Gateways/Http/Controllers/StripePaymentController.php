@@ -448,6 +448,22 @@ class StripePaymentController extends Controller
                 'is_paid'       => 1,
             ]);
 
+            // ✅ Update linked trip (if applicable)
+            if ($payment->attribute === 'trip' && $payment->attribute_id) {
+                try {
+                    \Modules\TripManagement\Entities\TripRequest::where('id', $payment->attribute_id)
+                        ->update([
+                            'payment_status' => 'paid',
+                            'paid_fare' => $request->final_amount,
+                        ]);
+                } catch (\Throwable $tripErr) {
+                    Log::error('Trip status update failed after capture', [
+                        'trip_id' => $payment->attribute_id,
+                        'error' => $tripErr->getMessage(),
+                    ]);
+                }
+            }
+
             // ✅ Trigger post-capture hook
             if (isset($payment->hook) && function_exists($payment->hook)) {
                 try {
