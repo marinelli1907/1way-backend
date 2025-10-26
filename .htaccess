@@ -1,7 +1,19 @@
+# Handle old storage paths safely
+RedirectMatch 301 ^/storage/app/public/(.*)$ /storage/$1
+
 <IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteRule ^(.*)$ index.php?url=$1 [QSA,L]
+    RewriteEngine On
+    RewriteBase /
+
+    # Laravel standard rewrites
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^ index.php [L]
+</IfModule>
+
+# Allow caching for static files
+<IfModule mod_headers.c>
+    <FilesMatch "\.(jpg|jpeg|png|gif|webp|svg|pdf|css|js|woff|woff2|ttf|eot)$">
+        Header set Cache-Control "max-age=2592000, public"
+    </FilesMatch>
 </IfModule>
