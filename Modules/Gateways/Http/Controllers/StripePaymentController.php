@@ -310,6 +310,7 @@ class StripePaymentController extends Controller
                 return response()->json([
                     'status'  => 'succeeded',
                     'message' => 'Payment authorized successfully!',
+                    'payment_id' => $payment->id ?? null,
                     'capture_url' => url('/payment/stripe/capture'),
                 ]);
                 return redirect('/payment-success')->with('message', 'Payment authorized successfully!');
