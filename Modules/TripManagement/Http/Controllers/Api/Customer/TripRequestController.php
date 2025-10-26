@@ -2,54 +2,55 @@
 
 namespace Modules\TripManagement\Http\Controllers\Api\Customer;
 
-use App\Broadcasting\CustomerTripCanceledAfterOngoingChannel;
+use Exception;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\DB;
+use Modules\Gateways\Traits\Payment;
+use App\Jobs\SendPushNotificationJob;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Database\Eloquent\Model;
+use App\Events\CustomerTripRequestEvent;
+use Illuminate\Support\Facades\Validator;
 use App\Events\CustomerCouponAppliedEvent;
 use App\Events\CustomerCouponRemovedEvent;
-use App\Events\CustomerTripCancelledAfterOngoingEvent;
 use App\Events\CustomerTripCancelledEvent;
-use App\Events\CustomerTripRequestEvent;
-use App\Jobs\SendPushNotificationJob;
-use Carbon\Carbon;
-use Exception;
-use Illuminate\Validation\Rule;
 use MatanYadaev\EloquentSpatial\Enums\Srid;
-use MatanYadaev\EloquentSpatial\Objects\Point;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Validator;
-use Modules\FareManagement\Interfaces\ParcelFareInterface;
-use Modules\FareManagement\Interfaces\TripFareInterface;
-use Modules\Gateways\Traits\Payment;
-use Modules\ParcelManagement\Repositories\ParcelWeightRepository;
-use Modules\PromotionManagement\Interfaces\CoupounInterface;
-use Modules\TripManagement\Entities\FareBidding;
-use Modules\TripManagement\Entities\RecentAddress;
-use Modules\TripManagement\Entities\TripRequest;
-use Modules\TripManagement\Entities\TripRequestCoordinate;
-use Modules\TripManagement\Entities\TripRequestTime;
-use Modules\TripManagement\Interfaces\FareBiddingInterface;
-use Modules\TripManagement\Interfaces\FareBiddingLogInterface;
-use Modules\TripManagement\Interfaces\RecentAddressInterface;
-use Modules\TripManagement\Interfaces\RejectedDriverRequestInterface;
-use Modules\TripManagement\Interfaces\TempTripNotificationInterface;
-use Modules\TripManagement\Interfaces\TripRequestInterfaces;
 use Modules\TripManagement\Lib\CommonTrait;
+use Modules\Gateways\Entities\PaymentRequest;
+use MatanYadaev\EloquentSpatial\Objects\Point;
+use Modules\TripManagement\Entities\FareBidding;
+use Modules\TripManagement\Entities\TripRequest;
+use Modules\TripManagement\Entities\RecentAddress;
+use Modules\TripManagement\Entities\TripRequestTime;
+use Modules\ZoneManagement\Interfaces\ZoneInterface;
+use App\Events\CustomerTripCancelledAfterOngoingEvent;
 use Modules\TripManagement\Lib\CouponCalculationTrait;
+use Modules\UserManagement\Interfaces\DriverInterface;
+use Modules\UserManagement\Lib\LevelUpdateCheckerTrait;
+use Modules\FareManagement\Interfaces\TripFareInterface;
 use Modules\TripManagement\Lib\DiscountCalculationTrait;
+use Modules\FareManagement\Interfaces\ParcelFareInterface;
+use Modules\TransactionManagement\Traits\TransactionTrait;
+use Modules\TripManagement\Entities\TripRequestCoordinate;
+use Modules\TripManagement\Interfaces\FareBiddingInterface;
+use Modules\PromotionManagement\Interfaces\CoupounInterface;
+use Modules\TripManagement\Interfaces\TripRequestInterfaces;
 use Modules\TripManagement\Transformers\FareBiddingResource;
 use Modules\TripManagement\Transformers\TripRequestResource;
+use App\Broadcasting\CustomerTripCanceledAfterOngoingChannel;
+use Modules\TripManagement\Interfaces\RecentAddressInterface;
 use Modules\UserManagement\Interfaces\DriverDetailsInterface;
-use Modules\UserManagement\Interfaces\DriverInterface;
-use Modules\UserManagement\Interfaces\UserLastLocationInterface;
-use Modules\UserManagement\Lib\LevelUpdateCheckerTrait;
 use Modules\UserManagement\Transformers\LastLocationResource;
-use Modules\ZoneManagement\Interfaces\ZoneInterface;
-use Modules\TransactionManagement\Traits\TransactionTrait;
+use Modules\TripManagement\Interfaces\FareBiddingLogInterface;
+use Modules\UserManagement\Interfaces\UserLastLocationInterface;
+use Modules\ParcelManagement\Repositories\ParcelWeightRepository;
 use Modules\ZoneManagement\Service\Interface\ZoneServiceInterface;
+use Modules\TripManagement\Interfaces\TempTripNotificationInterface;
+use Modules\TripManagement\Interfaces\RejectedDriverRequestInterface;
 
 class TripRequestController extends Controller
 {
@@ -1113,6 +1114,7 @@ class TripRequestController extends Controller
             ]
         );
         $trip = new TripRequestResource($trip->append('distance_wise_fare'));
+                
         return response()->json(responseFormatter(constant: DEFAULT_200, content: $trip));
     }
 
