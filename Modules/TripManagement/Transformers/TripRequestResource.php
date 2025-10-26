@@ -134,6 +134,18 @@ class TripRequestResource extends JsonResource
                 'estimated_time' => round((double)$this->time->estimated_time, 2),
             ];
         }
+
+        // ✅ NEW: attach latest payment info
+        $latestPayment = \Modules\Gateways\Entities\PaymentRequest::where('attribute_id', $this->id)
+            ->where('attribute', 'trip')
+            ->latest()
+            ->first();
+
+        $trip_request['latest_payment_id'] = $latestPayment?->id;
+        $trip_request['capture_url'] = $latestPayment
+            ? url("/payment/stripe/capture?payment_id={$latestPayment->id}")
+            : null;
+            
         return array_merge($trip_request, $coordinate, $fee, $time);
     }
 }
