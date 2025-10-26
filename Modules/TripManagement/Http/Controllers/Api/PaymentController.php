@@ -120,6 +120,7 @@ class PaymentController extends Controller
             'column' => 'id',
             'payment_method' => $request->payment_method,
             'tips' => $tips,
+            'payment_status' => HOLD
         ], $request->trip_request_id);
         // dd($trip->estimated_fare);
         $paymentAmount = $trip->estimated_fare + $tips;
@@ -168,6 +169,7 @@ class PaymentController extends Controller
         /* 🔹 NEW LOGIC ENDS HERE 🔹 */
 
         return redirect($redirectLink);
+        // return response()->json(responseFormatter(DEFAULT_UPDATE_200,$redirectLink));
     }
 
     /**
