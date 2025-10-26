@@ -307,6 +307,17 @@ class StripePaymentController extends Controller
                         ]);
                     }
                 }
+                try {
+                    \Modules\TripManagement\Entities\TripRequest::where('id', $payment->attribute_id)
+                        ->update([
+                            'payment_status' => 'hold',
+                        ]);
+                } catch (\Throwable $tripErr) {
+                    Log::error('Trip status update failed after capture', [
+                        'trip_id' => $payment->attribute_id,
+                        'error' => $tripErr->getMessage(),
+                    ]);
+                }
                 return response()->json([
                     'status'  => 'succeeded',
                     'message' => 'Payment authorized successfully!',
