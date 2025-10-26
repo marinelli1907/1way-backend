@@ -49,10 +49,22 @@ Route::group(['prefix' => 'payment'], function () {
 
     //STRIPE
     Route::group(['prefix' => 'stripe', 'as' => 'stripe.'], function () {
+
         Route::get('pay', [StripePaymentController::class, 'index'])->name('pay');
         Route::get('token', [StripePaymentController::class, 'payment_process_3d'])->name('token');
         Route::get('success', [StripePaymentController::class, 'success'])->name('success');
+
+            Route::get('authorize', [StripePaymentController::class, 'authorizeView'])->name('authorize');
+            Route::post('intent', [StripePaymentController::class, 'createManualIntent'])->name('intent');
+            Route::get('authorized/success', [StripePaymentController::class, 'authorizedSuccess'])->name('authorized/success');
+            Route::post('cancel-hold', [StripePaymentController::class, 'cancelAuthorization'])->name('cancel-hold');
+            // Route::post('capture', [StripePaymentController::class, 'capturePayment'])
+            //         ->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)
+            //         ->name('capture');
+            Route::get('capture', [StripePaymentController::class, 'capturePayment'])->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class)->name('capture');
+
     });
+
 
     //RAZOR-PAY
     Route::group(['prefix' => 'razor-pay', 'as' => 'razor-pay.'], function () {

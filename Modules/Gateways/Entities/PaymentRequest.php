@@ -32,5 +32,9 @@ class PaymentRequest extends Model
         'payment_platform',
         'created_at',
         'updated_at',
+        'stripe_payment_intent_id',
+        'stripe_status',
+        'is_captured',
+        'is_authorized',
     ];
 }
