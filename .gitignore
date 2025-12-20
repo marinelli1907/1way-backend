@@ -16,3 +16,9 @@ yarn-error.log
 .env.*
 /vendor
 /node_modules
+
+.DS_Store
+= collect*
+elect*
+er_type*
+ers')*
