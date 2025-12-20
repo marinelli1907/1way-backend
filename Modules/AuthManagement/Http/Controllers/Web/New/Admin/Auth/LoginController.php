@@ -2,147 +2,198 @@
 
 namespace Modules\AuthManagement\Http\Controllers\Web\New\Admin\Auth;
 
-use App\Http\Controllers\BaseController;
-use App\Service\BaseServiceInterface;
-use Brian2694\Toastr\Facades\Toastr;
-use Gregwar\Captcha\CaptchaBuilder;
-use Gregwar\Captcha\PhraseBuilder;
-use Illuminate\Contracts\Support\Renderable;
+use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Session;
-use Modules\BusinessManagement\Service\Interface\ExternalConfigurationServiceInterface;
-use Modules\UserManagement\Service\Interface\EmployeeServiceInterface;
+use Mews\Captcha\Facades\Captcha;
 
-class LoginController extends BaseController
+class LoginController extends Controller
 {
-    protected $employeeService;
-    protected $externalConfigurationService;
+    /**
+     * Where to redirect admins after login
+     */
+    protected string $redirectTo = '/admin';
 
-    public function __construct(EmployeeServiceInterface $employeeService, ExternalConfigurationServiceInterface $externalConfigurationService)
+    /**
+     * Show admin login page
+     */
+    public function loginView()
     {
-        parent::__construct($employeeService);
-        $this->employeeService = $employeeService;
-        $this->externalConfigurationService = $externalConfigurationService;
-        $this->middleware(function ($request, $next) {
-            if (auth()->check()) {
-                return redirect(route('admin.dashboard'));
+        if (auth()->check()) {
+            return redirect($this->redirectTo);
+        }
+
+        $recaptchaStatus = 0;
+        $recaptchaSiteKey = null;
+
+        if (function_exists('businessConfig')) {
+            $recaptcha = businessConfig('recaptcha')?->value ?? null;
+
+            if (is_array($recaptcha)) {
+                $recaptchaStatus  = (int) ($recaptcha['status'] ?? 0);
+                $recaptchaSiteKey = $recaptcha['site_key'] ?? null;
             }
-            return $next($request);
-        })->except('logout');
+        }
+
+        return view('authmanagement::login', [
+            'recaptcha_status'   => $recaptchaStatus,
+            'recaptcha_site_key' => $recaptchaSiteKey,
+        ]);
     }
 
     /**
-     * @return Renderable
+     * Handle admin login
      */
-
-    public function loginView(): Renderable
-    {
-        return view('authmanagement::login');
-    }
-
     public function login(Request $request)
     {
-        try {
-            $user = $this->employeeService->findOneBy(criteria: ['email' => $request['email']]);
-        } catch (\Exception $e) {
-            Toastr::error(NO_DATA_200['message']);
-            return back();
+        $recaptchaStatus = 0;
+        $recaptchaSecret = null;
+
+        if (function_exists('businessConfig')) {
+            $recaptcha = businessConfig('recaptcha')?->value ?? null;
+
+            if (is_array($recaptcha)) {
+                $recaptchaStatus = (int) ($recaptcha['status'] ?? 0);
+                $recaptchaSecret = $recaptcha['secret_key'] ?? null;
+            }
         }
-        $recaptcha = businessConfig('recaptcha')?->value;
-        if (isset($recaptcha) && $recaptcha['status'] == 1 && !$request?->set_default_captcha) {
-            $request->validate([
-                'g-recaptcha-response' => [
-                    function ($attribute, $value, $fail) {
-                        $secret_key = businessConfig('recaptcha')?->value['secret_key'];
-                        $response = $value;
 
-                        $gResponse = Http::asForm()->post('https://www.google.com/recaptcha/api/siteverify', [
-                            'secret' => $secret_key,
-                            'response' => $value,
-                            'remoteip' => \request()->ip(),
-                        ]);
+        // Base validation
+        $rules = [
+            'email'    => 'required|email',
+            'password' => 'required|string',
+        ];
 
-                        if (!$gResponse->successful()) {
-                            $fail(translate('ReCaptcha Failed'));
-                        }
-                    },
-                ],
-            ]);
+        // Captcha rules
+        if ($recaptchaStatus === 1) {
+            $rules['g-recaptcha-response'] = 'required';
         } else {
-            if (strtolower($request->default_captcha_value) != strtolower(Session('default_captcha_code'))) {
-                Session::forget('default_captcha_code');
-                return back()->withErrors(translate('Captcha Failed'));
+            // IMPORTANT: these must exist because we validate with Captcha::check_api()
+            $rules['default_captcha_value'] = 'required|string';
+            $rules['captcha_key'] = 'required|string';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return back()->withErrors($validator)->withInput();
+        }
+
+        /**
+         * Validate default captcha (API mode: value + key)
+         */
+        if ($recaptchaStatus !== 1) {
+            $value = (string) $request->input('default_captcha_value');
+            $key   = (string) $request->input('captcha_key');
+
+            if (!Captcha::check_api($value, $key)) {
+                return back()
+                    ->withErrors(['default_captcha_value' => 'Captcha Failed. Please try again.'])
+                    ->withInput();
             }
         }
 
-        if (isset($user) && Hash::check($request['password'], $user->password)) {
-            if (($user && $user?->role?->is_active) || $user->user_type === 'super-admin') {
-                if (auth()->attempt(['email' => $request['email'], 'password' => $request['password']])) {
-                    Toastr::success(AUTH_LOGIN_200['message']);
-                    return redirect()->route('admin.dashboard');
-                }
+        /**
+         * Validate Google reCAPTCHA
+         */
+        if ($recaptchaStatus === 1) {
+            if (!$recaptchaSecret) {
+                return back()
+                    ->withErrors(['g-recaptcha-response' => 'reCAPTCHA is enabled but secret key is missing.'])
+                    ->withInput();
             }
-            Toastr::error(ACCOUNT_DISABLED['message']);
-            return back();
-        }
-        Toastr::error(AUTH_LOGIN_401['message']);
-        return back();
-    }
 
-    public function externalLoginFromMart(Request $request)
-    {
-        $martToken = $this->externalConfigurationService->findOneBy(['key' => 'mart_token'])?->value ?? null;
-        $systemSelfToken = $this->externalConfigurationService->findOneBy(['key' => 'system_self_token'])?->value ?? null;
-        $martBaseUrl = $this->externalConfigurationService->findOneBy(['key' => 'mart_base_url'])?->value ?? null;
-        if ($martToken == $request->mart_token && $martBaseUrl == $request->mart_base_url && $systemSelfToken == $request->drivemond_token) {
-            $user = $this->employeeService->findOneBy(criteria: ['user_type' => 'super-admin']);
-            if (isset($user)) {
-                if (($user && $user?->role?->is_active) || $user->user_type === 'super-admin') {
-                    if (Auth::loginUsingId($user->id)) {
-                        Toastr::success(AUTH_LOGIN_200['message']);
-                        return redirect()->route('admin.dashboard');
-                    }
-                }
-                Toastr::error(ACCOUNT_DISABLED['message']);
-                return back();
+            $response = Http::asForm()->post(
+                'https://www.google.com/recaptcha/api/siteverify',
+                [
+                    'secret'   => $recaptchaSecret,
+                    'response' => $request->get('g-recaptcha-response'),
+                ]
+            );
+
+            if (!($response->json('success') ?? false)) {
+                return back()
+                    ->withErrors(['g-recaptcha-response' => 'reCAPTCHA verification failed.'])
+                    ->withInput();
             }
         }
-        Toastr::error(AUTH_LOGIN_401['message']);
-        return back();
+
+        /**
+         * Attempt login (default guard)
+         */
+        if (!Auth::attempt(
+            $request->only('email', 'password'),
+            $request->boolean('remember')
+        )) {
+            return back()
+                ->withErrors(['email' => 'Invalid credentials'])
+                ->withInput();
+        }
+
+        $user = Auth::user();
+
+        /**
+         * ACCOUNT SAFETY CHECKS
+         */
+        if (($user->is_active ?? 1) != 1 || ($user->is_temp_blocked ?? 0) == 1) {
+            Auth::logout();
+
+            return back()->withErrors([
+                'email' => 'User account has been disabled. Please contact the administrator.',
+            ]);
+        }
+
+        /**
+         * ROLE CHECK (Super Admin bypass)
+         */
+        if (($user->user_type ?? null) !== 'super-admin') {
+            $roleActive = DB::table('roles')
+                ->where('id', $user->role_id ?? null)
+                ->value('is_active');
+
+            if ($roleActive != 1) {
+                Auth::logout();
+
+                return back()->withErrors([
+                    'email' => 'Your assigned role is inactive.',
+                ]);
+            }
+        }
+
+        /**
+         * Login success — reset flags
+         */
+        if (isset($user->failed_attempt)) $user->failed_attempt = 0;
+        if (isset($user->is_temp_blocked)) $user->is_temp_blocked = 0;
+        if (isset($user->blocked_at)) $user->blocked_at = null;
+        $user->save();
+
+        $request->session()->regenerate();
+
+        return redirect()->intended($this->redirectTo);
     }
 
-    public function logout()
+    /**
+     * Logout admin
+     */
+    public function logout(Request $request)
     {
-        if (auth()->user()) {
-            auth()->guard('web')->logout();
-            Toastr::success(AUTH_LOGOUT_200['message']);
-            return redirect(route('admin.auth.login'));
-        }
-        return redirect()->back();
+        Auth::logout();
+
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect()->route('admin.auth.login');
     }
-    public function captcha($tmp): void
+
+    /**
+     * Generate captcha (API JSON: { key, img, sensitive })
+     */
+    public function captcha($tmp)
     {
-
-        $phrase = new PhraseBuilder;
-        $code = $phrase->build(4);
-        $builder = new CaptchaBuilder($code, $phrase);
-        $builder->setBackgroundColor(220, 210, 230);
-        $builder->setMaxAngle(25);
-        $builder->setMaxBehindLines(0);
-        $builder->setMaxFrontLines(0);
-        $builder->build($width = 100, $height = 40, $font = null);
-        $phrase = $builder->getPhrase();
-
-        if (Session::has('default_captcha_code')) {
-            Session::forget('default_captcha_code');
-        }
-        Session::put('default_captcha_code', $phrase);
-        header("Cache-Control: no-cache, must-revalidate");
-        header("Content-Type:image/jpeg");
-        $builder->output();
+        return response()->json(Captcha::create('default', true));
     }
 }

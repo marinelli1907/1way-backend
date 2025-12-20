@@ -3,27 +3,46 @@
 namespace Modules\TripManagement\Providers;
 
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Database\Eloquent\Factory;
 use Modules\TripManagement\Entities\ParcelRefund;
 use Modules\TripManagement\Observers\ParcelRefundObserver;
 
+// Interfaces
+use Modules\TripManagement\Service\Interfaces\FareBiddingLogServiceInterface;
+use Modules\TripManagement\Service\Interfaces\FareBiddingServiceInterface;
+use Modules\TripManagement\Service\Interfaces\ParcelRefundProofServiceInterface;
+use Modules\TripManagement\Service\Interfaces\ParcelRefundServiceInterface;
+use Modules\TripManagement\Service\Interfaces\RecentAddressServiceInterface;
+use Modules\TripManagement\Service\Interfaces\RejectedDriverRequestServiceInterface;
+use Modules\TripManagement\Service\Interfaces\SafetyAlertServiceInterface;
+use Modules\TripManagement\Service\Interfaces\TempTripNotificationServiceInterface;
+use Modules\TripManagement\Service\Interfaces\TripRequestCoordinateServiceInterface;
+use Modules\TripManagement\Service\Interfaces\TripRequestFeeServiceInterface;
+use Modules\TripManagement\Service\Interfaces\TripRequestServiceInterface;
+use Modules\TripManagement\Service\Interfaces\TripRequestTimeServiceInterface;
+use Modules\TripManagement\Service\Interfaces\TripRouteServiceInterface;
+use Modules\TripManagement\Service\Interfaces\TripStatusServiceInterface;
+
+// Implementations
+use Modules\TripManagement\Service\FareBiddingLogService;
+use Modules\TripManagement\Service\FareBiddingService;
+use Modules\TripManagement\Service\ParcelRefundProofService;
+use Modules\TripManagement\Service\ParcelRefundService;
+use Modules\TripManagement\Service\RecentAddressService;
+use Modules\TripManagement\Service\RejectedDriverRequestService;
+use Modules\TripManagement\Service\SafetyAlertService;
+use Modules\TripManagement\Service\TempTripNotificationService;
+use Modules\TripManagement\Service\TripRequestCoordinateService;
+use Modules\TripManagement\Service\TripRequestFeeService;
+use Modules\TripManagement\Service\TripRequestService;
+use Modules\TripManagement\Service\TripRequestTimeService;
+use Modules\TripManagement\Service\TripRouteService;
+use Modules\TripManagement\Service\TripStatusService;
+
 class TripManagementServiceProvider extends ServiceProvider
 {
-    /**
-     * @var string $moduleName
-     */
     protected $moduleName = 'TripManagement';
-
-    /**
-     * @var string $moduleNameLower
-     */
     protected $moduleNameLower = 'tripmanagement';
 
-    /**
-     * Boot the application events.
-     *
-     * @return void
-     */
     public function boot()
     {
         $this->registerTranslations();
@@ -33,54 +52,52 @@ class TripManagementServiceProvider extends ServiceProvider
         ParcelRefund::observe(ParcelRefundObserver::class);
     }
 
-    /**
-     * Register the service provider.
-     *
-     * @return void
-     */
     public function register()
     {
         $this->app->register(RouteServiceProvider::class);
+
+        // ✅ CRITICAL: bind interfaces → implementations
+        $this->app->bind(TripRequestServiceInterface::class, TripRequestService::class);
+        $this->app->bind(TripRequestFeeServiceInterface::class, TripRequestFeeService::class);
+        $this->app->bind(TripRequestTimeServiceInterface::class, TripRequestTimeService::class);
+        $this->app->bind(TripRequestCoordinateServiceInterface::class, TripRequestCoordinateService::class);
+        $this->app->bind(TripRouteServiceInterface::class, TripRouteService::class);
+        $this->app->bind(TripStatusServiceInterface::class, TripStatusService::class);
+
+        $this->app->bind(FareBiddingServiceInterface::class, FareBiddingService::class);
+        $this->app->bind(FareBiddingLogServiceInterface::class, FareBiddingLogService::class);
+
+        $this->app->bind(ParcelRefundServiceInterface::class, ParcelRefundService::class);
+        $this->app->bind(ParcelRefundProofServiceInterface::class, ParcelRefundProofService::class);
+
+        $this->app->bind(RecentAddressServiceInterface::class, RecentAddressService::class);
+        $this->app->bind(RejectedDriverRequestServiceInterface::class, RejectedDriverRequestService::class);
+        $this->app->bind(TempTripNotificationServiceInterface::class, TempTripNotificationService::class);
+        $this->app->bind(SafetyAlertServiceInterface::class, SafetyAlertService::class);
     }
 
-    /**
-     * Register config.
-     *
-     * @return void
-     */
     protected function registerConfig()
     {
         $this->publishes([
             module_path($this->moduleName, 'Config/config.php') => config_path($this->moduleNameLower . '.php'),
         ], 'config');
+
         $this->mergeConfigFrom(
-            module_path($this->moduleName, 'Config/config.php'), $this->moduleNameLower
+            module_path($this->moduleName, 'Config/config.php'),
+            $this->moduleNameLower
         );
     }
 
-    /**
-     * Register views.
-     *
-     * @return void
-     */
     public function registerViews()
     {
-        $viewPath = resource_path('views/modules/' . $this->moduleNameLower);
-
+        $viewPath   = resource_path('views/modules/' . $this->moduleNameLower);
         $sourcePath = module_path($this->moduleName, 'Resources/views');
 
-        $this->publishes([
-            $sourcePath => $viewPath
-        ], ['views', $this->moduleNameLower . '-module-views']);
+        $this->publishes([$sourcePath => $viewPath], ['views', $this->moduleNameLower . '-module-views']);
 
         $this->loadViewsFrom(array_merge($this->getPublishableViewPaths(), [$sourcePath]), $this->moduleNameLower);
     }
 
-    /**
-     * Register translations.
-     *
-     * @return void
-     */
     public function registerTranslations()
     {
         $langPath = resource_path('lang/modules/' . $this->moduleNameLower);
@@ -92,11 +109,6 @@ class TripManagementServiceProvider extends ServiceProvider
         }
     }
 
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array
-     */
     public function provides()
     {
         return [];

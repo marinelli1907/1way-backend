@@ -27,15 +27,19 @@ class PvitController extends Controller
 
     public function __construct(PaymentRequest $payment)
     {
+        // FIX 1: Initialize config_values to prevent "accessed before initialization" error
+        $this->config_values = (object)[];
+
         $config = $this->paymentConfig('pvit', PAYMENT_CONFIG);
 
-        if (!is_null($config) && $config->mode == 'live') {
-            $this->config_values = json_decode($config->live_values);
-        } elseif (!is_null($config) && $config->mode == 'test') {
-            $this->config_values = json_decode($config->test_values);
+        // FIX 2: Only populate config_values if $config is NOT null AND mode is recognized.
+        if (!is_null($config) && ($config->mode == 'live' || $config->mode == 'test')) {
+            $config_data = ($config->mode == 'live') ? $config->live_values : $config->test_values;
+            $this->config_values = json_decode($config_data);
         }
 
-        if ($config) {
+        // FIX 3: Only access the configuration object properties if it was successfully loaded and has the required keys
+        if ($config && isset($this->config_values->mc_tel_merchant)) {
             $this->mc_tel_merchant = $this->config_values->mc_tel_merchant;
             $this->access_token = $this->config_values->access_token;
             $this->mc_merchant_code = $this->config_values->mc_merchant_code;

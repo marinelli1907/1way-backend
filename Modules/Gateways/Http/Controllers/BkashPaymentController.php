@@ -29,14 +29,19 @@ class BkashPaymentController extends Controller
 
     public function __construct(PaymentRequest $payment, User $user)
     {
+        // FIX 1: Initialize config_values to prevent "accessed before initialization" error
+        $this->config_values = (object)[];
+
         $config = $this->paymentConfig('bkash', PAYMENT_CONFIG);
-        if (!is_null($config) && $config->mode == 'live') {
-            $this->config_values = json_decode($config->live_values);
-        } elseif (!is_null($config) && $config->mode == 'test') {
-            $this->config_values = json_decode($config->test_values);
+
+        // FIX 2: Only populate config_values if $config is NOT null AND mode is recognized.
+        if (!is_null($config) && ($config->mode == 'live' || $config->mode == 'test')) {
+            $config_data = ($config->mode == 'live') ? $config->live_values : $config->test_values;
+            $this->config_values = json_decode($config_data);
         }
 
-        if ($config) {
+        // FIX 3: Add a robust check that $this->config_values has the key 'app_key'
+        if ($config && isset($this->config_values->app_key)) { 
             $this->app_key = $this->config_values->app_key;
             $this->app_secret = $this->config_values->app_secret;
             $this->username = $this->config_values->username;
@@ -182,4 +187,3 @@ class BkashPaymentController extends Controller
     }
 
 }
-

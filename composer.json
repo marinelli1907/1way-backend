@@ -24,6 +24,7 @@
         "madnest/madzipper": "^1.4",
         "matanyadaev/laravel-eloquent-spatial": "^4.0",
         "mercadopago/dx-php": "2.4.3",
+        "mews/captcha": "^3.3",
         "mpdf/mpdf": "^8.2",
         "nwidart/laravel-modules": "v11.0",
         "pusher/pusher-php-server": "^7.2",
