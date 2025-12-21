@@ -1,0 +1,117 @@
+
+  app ..............................................  
+  name ........................................ 1Way  
+  env ................................... production  
+  debug ...................................... false  
+  url ................... https://admin.1wayride.com  
+  asset_url ............. https://admin.1wayride.com  
+  timezone ..................................... UTC  
+  locale ........................................ en  
+  fallback_locale ............................... en  
+  faker_locale ............................... en_US  
+  key  base64:SFNOwn4QYGDn/hshl4r1SrLHZhnunfAYtiHz/StlXEY=  
+  cipher ............................... AES-256-CBC  
+  providers ⇁ 0  Illuminate\Auth\AuthServiceProvider  
+  providers ⇁ 1  Illuminate\Broadcasting\BroadcastServiceProvider  
+  providers ⇁ 2 .. Illuminate\Bus\BusServiceProvider  
+  providers ⇁ 3  Illuminate\Cache\CacheServiceProvider  
+  providers ⇁ 4  Illuminate\Foundation\Providers\ConsoleSupportServiceProvider  
+  providers ⇁ 5  Illuminate\Cookie\CookieServiceProvider  
+  providers ⇁ 6  Illuminate\Database\DatabaseServiceProvider  
+  providers ⇁ 7  Illuminate\Encryption\EncryptionServiceProvider  
+  providers ⇁ 8  Illuminate\Filesystem\FilesystemServiceProvider  
+  providers ⇁ 9  Illuminate\Foundation\Providers\FoundationServiceProvider  
+  providers ⇁ 10  Illuminate\Hashing\HashServiceProvider  
+  providers ⇁ 11  Illuminate\Mail\MailServiceProvider  
+  providers ⇁ 12  Illuminate\Notifications\NotificationServiceProvider  
+  providers ⇁ 13  Illuminate\Pagination\PaginationServiceProvider  
+  providers ⇁ 14  Illuminate\Auth\Passwords\PasswordResetServiceProvider  
+  providers ⇁ 15  Illuminate\Pipeline\PipelineServiceProvider  
+  providers ⇁ 16  Illuminate\Queue\QueueServiceProvider  
+  providers ⇁ 17  Illuminate\Redis\RedisServiceProvider  
+  providers ⇁ 18  Illuminate\Session\SessionServiceProvider  
+  providers ⇁ 19  Illuminate\Translation\TranslationServiceProvider  
+  providers ⇁ 20  Illuminate\Validation\ValidationServiceProvider  
+  providers ⇁ 21  Illuminate\View\ViewServiceProvider  
+  providers ⇁ 22  Illuminate\Auth\AuthServiceProvider  
+  providers ⇁ 23  Illuminate\Broadcasting\BroadcastServiceProvider  
+  providers ⇁ 24 . Illuminate\Bus\BusServiceProvider  
+  providers ⇁ 25  Illuminate\Cache\CacheServiceProvider  
+  providers ⇁ 26  Illuminate\Foundation\Providers\ConsoleSupportServiceProvider  
+  providers ⇁ 27  Illuminate\Cookie\CookieServiceProvider  
+  providers ⇁ 28  Illuminate\Database\DatabaseServiceProvider  
+  providers ⇁ 29  Illuminate\Encryption\EncryptionServiceProvider  
+  providers ⇁ 30  Illuminate\Filesystem\FilesystemServiceProvider  
+  providers ⇁ 31  Illuminate\Foundation\Providers\FoundationServiceProvider  
+  providers ⇁ 32  Illuminate\Hashing\HashServiceProvider  
+  providers ⇁ 33  Illuminate\Mail\MailServiceProvider  
+  providers ⇁ 34  Illuminate\Notifications\NotificationServiceProvider  
+  providers ⇁ 35  Illuminate\Pagination\PaginationServiceProvider  
+  providers ⇁ 36  Illuminate\Pipeline\PipelineServiceProvider  
+  providers ⇁ 37  Illuminate\Queue\QueueServiceProvider  
+  providers ⇁ 38  Illuminate\Redis\RedisServiceProvider  
+  providers ⇁ 39  Illuminate\Auth\Passwords\PasswordResetServiceProvider  
+  providers ⇁ 40  Illuminate\Session\SessionServiceProvider  
+  providers ⇁ 41  Illuminate\Translation\TranslationServiceProvider  
+  providers ⇁ 42  Illuminate\Validation\ValidationServiceProvider  
+  providers ⇁ 43  Illuminate\View\ViewServiceProvider  
+  providers ⇁ 44 .. App\Providers\AppServiceProvider  
+  providers ⇁ 45  App\Providers\GlobalDataServiceProvider  
+  providers ⇁ 46 . App\Providers\AuthServiceProvider  
+  providers ⇁ 47  App\Providers\EventServiceProvider  
+  providers ⇁ 48  App\Providers\RouteServiceProvider  
+  providers ⇁ 49  App\Providers\RepositoryServiceProvider  
+  providers ⇁ 50  App\Providers\BroadcastServiceProvider  
+  providers ⇁ 51  Modules\AdminModule\Providers\RepositoryServiceProvider  
+  providers ⇁ 52  Modules\AuthManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 53  Modules\BusinessManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 54  Modules\ChattingManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 55  Modules\FareManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 56  Modules\ParcelManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 57  Modules\PromotionManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 58  Modules\ReviewModule\Providers\RepositoryServiceProvider  
+  providers ⇁ 59  Modules\TransactionManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 60  Modules\TripManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 61  Modules\UserManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 62  Modules\ZoneManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 63  Modules\VehicleManagement\Providers\RepositoryServiceProvider  
+  providers ⇁ 64  Modules\AdminModule\Providers\FirebaseServiceProvider  
+  aliases ⇁ App ..... Illuminate\Support\Facades\App  
+  aliases ⇁ Arr ............. Illuminate\Support\Arr  
+  aliases ⇁ Artisan  Illuminate\Support\Facades\Artisan  
+  aliases ⇁ Auth ... Illuminate\Support\Facades\Auth  
+  aliases ⇁ Blade . Illuminate\Support\Facades\Blade  
+  aliases ⇁ Broadcast  Illuminate\Support\Facades\Broadcast  
+  aliases ⇁ Bus ..... Illuminate\Support\Facades\Bus  
+  aliases ⇁ Cache . Illuminate\Support\Facades\Cache  
+  aliases ⇁ Config  Illuminate\Support\Facades\Config  
+  aliases ⇁ Cookie  Illuminate\Support\Facades\Cookie  
+  aliases ⇁ Crypt . Illuminate\Support\Facades\Crypt  
+  aliases ⇁ Date ... Illuminate\Support\Facades\Date  
+  aliases ⇁ DB ....... Illuminate\Support\Facades\DB  
+  aliases ⇁ Eloquent  Illuminate\Database\Eloquent\Model  
+  aliases ⇁ Event . Illuminate\Support\Facades\Event  
+  aliases ⇁ File ... Illuminate\Support\Facades\File  
+  aliases ⇁ Gate ... Illuminate\Support\Facades\Gate  
+  aliases ⇁ Hash ... Illuminate\Support\Facades\Hash  
+  aliases ⇁ Http ... Illuminate\Support\Facades\Http  
+  aliases ⇁ Js ............... Illuminate\Support\Js  
+  aliases ⇁ Lang ... Illuminate\Support\Facades\Lang  
+  aliases ⇁ Log ..... Illuminate\Support\Facades\Log  
+  aliases ⇁ Mail ... Illuminate\Support\Facades\Mail  
+  aliases ⇁ Notification  Illuminate\Support\Facades\Notification  
+  aliases ⇁ Password  Illuminate\Support\Facades\Password  
+  aliases ⇁ Queue . Illuminate\Support\Facades\Queue  
+  aliases ⇁ RateLimiter  Illuminate\Support\Facades\RateLimiter  
+  aliases ⇁ Redirect  Illuminate\Support\Facades\Redirect  
+  aliases ⇁ Request  Illuminate\Support\Facades\Request  
+  aliases ⇁ Response  Illuminate\Support\Facades\Response  
+  aliases ⇁ Route . Illuminate\Support\Facades\Route  
+  aliases ⇁ Schema  Illuminate\Support\Facades\Schema  
+  aliases ⇁ Session  Illuminate\Support\Facades\Session  
+  aliases ⇁ Storage  Illuminate\Support\Facades\Storage  
+  aliases ⇁ Str ............. Illuminate\Support\Str  
+  aliases ⇁ URL ..... Illuminate\Support\Facades\URL  
+  aliases ⇁ Validator  Illuminate\Support\Facades\Validator  
+  aliases ⇁ View ... Illuminate\Support\Facades\View  
+

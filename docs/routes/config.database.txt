@@ -1,0 +1,60 @@
+
+  database .........................................  
+  default .................................... mysql  
+  connections ⇁ sqlite ⇁ driver ............. sqlite  
+  connections ⇁ sqlite ⇁ url .................. null  
+  connections ⇁ sqlite ⇁ database .......... one_way  
+  connections ⇁ sqlite ⇁ prefix ....................  
+  connections ⇁ sqlite ⇁ foreign_key_constraints  true  
+  connections ⇁ mysql ⇁ driver ............... mysql  
+  connections ⇁ mysql ⇁ url ................... null  
+  connections ⇁ mysql ⇁ host ............. 127.0.0.1  
+  connections ⇁ mysql ⇁ port .................. 3306  
+  connections ⇁ mysql ⇁ database ........... one_way  
+  connections ⇁ mysql ⇁ username ...... one_way_user  
+  connections ⇁ mysql ⇁ password ...... 1Way_DB_Pass  
+  connections ⇁ mysql ⇁ unix_socket ................  
+  connections ⇁ mysql ⇁ charset ............ utf8mb4  
+  connections ⇁ mysql ⇁ collation  utf8mb4_unicode_ci  
+  connections ⇁ mysql ⇁ prefix .....................  
+  connections ⇁ mysql ⇁ prefix_indexes ........ true  
+  connections ⇁ mysql ⇁ strict ................ true  
+  connections ⇁ mysql ⇁ engine ................ null  
+  connections ⇁ mysql ⇁ options ................. []  
+  connections ⇁ pgsql ⇁ driver ............... pgsql  
+  connections ⇁ pgsql ⇁ url ................... null  
+  connections ⇁ pgsql ⇁ host ............. 127.0.0.1  
+  connections ⇁ pgsql ⇁ port .................. 3306  
+  connections ⇁ pgsql ⇁ database ........... one_way  
+  connections ⇁ pgsql ⇁ username ...... one_way_user  
+  connections ⇁ pgsql ⇁ password ...... 1Way_DB_Pass  
+  connections ⇁ pgsql ⇁ charset ............... utf8  
+  connections ⇁ pgsql ⇁ prefix .....................  
+  connections ⇁ pgsql ⇁ prefix_indexes ........ true  
+  connections ⇁ pgsql ⇁ schema .............. public  
+  connections ⇁ pgsql ⇁ sslmode ............. prefer  
+  connections ⇁ sqlsrv ⇁ driver ............. sqlsrv  
+  connections ⇁ sqlsrv ⇁ url .................. null  
+  connections ⇁ sqlsrv ⇁ host ............ 127.0.0.1  
+  connections ⇁ sqlsrv ⇁ port ................. 3306  
+  connections ⇁ sqlsrv ⇁ database .......... one_way  
+  connections ⇁ sqlsrv ⇁ username ..... one_way_user  
+  connections ⇁ sqlsrv ⇁ password ..... 1Way_DB_Pass  
+  connections ⇁ sqlsrv ⇁ charset .............. utf8  
+  connections ⇁ sqlsrv ⇁ prefix ....................  
+  connections ⇁ sqlsrv ⇁ prefix_indexes ....... true  
+  migrations ............................ migrations  
+  redis ⇁ client .......................... phpredis  
+  redis ⇁ options ⇁ cluster .................. redis  
+  redis ⇁ options ⇁ prefix .......... 1way_database_  
+  redis ⇁ default ⇁ url ....................... null  
+  redis ⇁ default ⇁ host ................. 127.0.0.1  
+  redis ⇁ default ⇁ password .................. null  
+  redis ⇁ default ⇁ port ...................... 6379  
+  redis ⇁ default ⇁ database ..................... 0  
+  redis ⇁ cache ⇁ url ......................... null  
+  redis ⇁ cache ⇁ host ................... 127.0.0.1  
+  redis ⇁ cache ⇁ password .................... null  
+  redis ⇁ cache ⇁ port ........................ 6379  
+  redis ⇁ cache ⇁ database ....................... 1  
+
