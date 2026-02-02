@@ -21,7 +21,7 @@ use Modules\VehicleManagement\Entities\Vehicle;
 
 class User extends Authenticatable
 {
-    use HasFactory, HasUuid, Notifiable, SoftDeletes, HasApiTokens, HasFactory;
+    use HasFactory, HasUuid, Notifiable, SoftDeletes, HasApiTokens;
 
     protected $fillable = [
         'user_level_id',
@@ -55,6 +55,7 @@ class User extends Authenticatable
         'deleted_at',
         'created_at',
         'updated_at',
+        'driver_split_percent',
     ];
 
     protected $casts = [

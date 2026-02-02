@@ -22,10 +22,15 @@ class DriverStoreOrUpdateRequest extends FormRequest
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:8|max:17|unique:users,phone,' . $id,
             'password' => !is_null($this->password) ? 'required|min:8' : 'nullable',
             'confirm_password' => [
-                Rule::requiredIf(function (){
+                Rule::requiredIf(function () {
                     return $this->password != null;
                 }),
-                'same:password'],
+                'same:password'
+            ],
+
+            // ✅ NEW: driver split percent (0-100)
+            'driver_split_percent' => 'nullable|numeric|min:0|max:100',
+
             'profile_image' => [
                 Rule::requiredIf(empty($id)),
                 'image',
