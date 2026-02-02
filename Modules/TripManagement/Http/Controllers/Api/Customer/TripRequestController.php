@@ -305,7 +305,7 @@ class TripRequestController extends Controller
 
             // Encoded Polyline and Zone Information
             'encoded_polyline' => 'sometimes',
-            'zone_id' => 'required|uuid|exists:zones,id',
+            'zone_id' => 'required|integer|exists:zones,id',
 
         ]);
 
@@ -318,10 +318,32 @@ class TripRequestController extends Controller
             $pickup_point = $save_trip->coordinate->pickup_coordinates;
             $destination_point = $save_trip->coordinate->destination_coordinates;
         } else {
-            $pickup_coordinates = json_decode($request['pickup_coordinates'], true);
-            $destination_coordinates = json_decode($request['destination_coordinates'], true);
-            $pickup_point = new Point($pickup_coordinates[0], $pickup_coordinates[1]);
-            $destination_point = new Point($destination_coordinates[0], $destination_coordinates[1]);
+            // Accept either pickup_coordinates/destination_coordinates JSON OR separate lat/lng fields
+            if ($request->filled('pickup_coordinates') && $request->filled('destination_coordinates')) {
+                $pickup_coordinates = json_decode($request->input('pickup_coordinates'), true);
+                $destination_coordinates = json_decode($request->input('destination_coordinates'), true);
+            } elseif (
+                $request->filled('pickup_latitude') && $request->filled('pickup_longitude') &&
+                $request->filled('destination_latitude') && $request->filled('destination_longitude')
+            ) {
+                $pickup_coordinates = [(float)$request->input('pickup_latitude'), (float)$request->input('pickup_longitude')];
+                $destination_coordinates = [(float)$request->input('destination_latitude'), (float)$request->input('destination_longitude')];
+            } else {
+                return response()->json(responseFormatter(constant: DEFAULT_400, errors: [
+                    ['error_code' => 'pickup_coordinates', 'message' => 'pickup_coordinates or pickup_latitude/pickup_longitude is required.'],
+                    ['error_code' => 'destination_coordinates', 'message' => 'destination_coordinates or destination_latitude/destination_longitude is required.'],
+                ]), 403);
+            }
+
+            if (!is_array($pickup_coordinates) || count($pickup_coordinates) < 2 || !is_array($destination_coordinates) || count($destination_coordinates) < 2) {
+                return response()->json(responseFormatter(constant: DEFAULT_400, errors: [
+                    ['error_code' => 'pickup_coordinates', 'message' => 'pickup_coordinates must be a JSON array: [lat,lng].'],
+                    ['error_code' => 'destination_coordinates', 'message' => 'destination_coordinates must be a JSON array: [lat,lng].'],
+                ]), 403);
+            }
+
+            $pickup_point = new Point($pickup_coordinates[0], $pickup_coordinates[1], 4326);
+            $destination_point = new Point($destination_coordinates[0], $destination_coordinates[1], 4326);
         }
 //        dd($pickup_coordinates);
 
@@ -798,7 +820,7 @@ class TripRequestController extends Controller
                     if ($trip->type == RIDE_REQUEST) {
                         $driverDetails->ride_count = 0;
                     } else {
-                        --$driverDetails->parcel_count;
+                        $driverDetails->parcel_count--;
                     }
                     $driverDetails->availability_status = 'available';
                     $driverDetails->save();
@@ -840,7 +862,7 @@ class TripRequestController extends Controller
             if ($trip->type == RIDE_REQUEST) {
                 $driverDetails->ride_count = 0;
             } else if ($request->status == 'completed') {
-                --$driverDetails->parcel_count;
+                $driverDetails->parcel_count--;
             }
             $driverDetails->availability_status = 'available';
             $driverDetails->save();
@@ -1242,27 +1264,33 @@ class TripRequestController extends Controller
             $final_fare_without_tax = ($trip->paid_fare - $trip->fee->vat_tax - $trip->fee->tips) - $response['discount'];
             $vat = ($vat_percent * $final_fare_without_tax) / 100;
             $admin_commission = (($final_fare_without_tax * $admin_trip_commission) / 100) + $vat;
-            $updateTrip = TripRequest::find($request->trip_request_id);
-            $updateTrip->coupon_id = $coupon->id;
-            $updateTrip->coupon_amount = $response['discount'];
-            $updateTrip->paid_fare = $final_fare_without_tax + $vat + $trip->fee->tips;
-            $updateTrip->fee()->update([
+            // Update the already-loaded $trip (avoid bypassing repository / guards)
+            $trip->coupon_id = $coupon->id;
+            $trip->coupon_amount = $response['discount'];
+            $trip->paid_fare = $final_fare_without_tax + $vat + $trip->fee->tips;
+
+            $trip->fee()->update([
                 'vat_tax' => $vat,
                 'admin_commission' => $admin_commission
             ]);
-            $updateTrip->save();
+
+            $trip->save();
 
             $push = getNotification('coupon_applied');
-            sendDeviceNotification(
-                fcm_token: $trip->driver->fcm_token,
-                title: translate($push['title']),
-                description: translate(textVariableDataFormat(value: $push['description'])) . ' ' . $response['discount'],
-                status: $push['status'],
-                ride_request_id: $trip->id,
-                type: $trip->type,
-                action: 'coupon_applied',
-                user_id: $trip->driver->id
-            );
+
+            // Driver can be null on some trips; only notify when present.
+            if ($trip->driver && !empty($trip->driver->fcm_token)) {
+                sendDeviceNotification(
+                    fcm_token: $trip->driver->fcm_token,
+                    title: translate($push['title']),
+                    description: translate(textVariableDataFormat(value: $push['description'])) . ' ' . $response['discount'],
+                    status: $push['status'],
+                    ride_request_id: $trip->id,
+                    type: $trip->type,
+                    action: 'coupon_applied',
+                    user_id: $trip->driver->id
+                );
+            }
             try {
                 checkPusherConnection(CustomerCouponAppliedEvent::broadcast($trip));
             } catch (Exception $exception) {
@@ -1391,7 +1419,7 @@ class TripRequestController extends Controller
         DB::commit();
         $this->returnTimeExceedFeeTransaction($trip);
         $driverDetails = $this->driverDetails->getBy(column: 'user_id', value: $trip->driver_id);
-        --$driverDetails->parcel_count;
+        $driverDetails->parcel_count--;
         $driverDetails->save();
         $push = getNotification('parcel_returned');
         sendDeviceNotification(fcm_token: $trip->driver->fcm_token,
@@ -1475,24 +1503,50 @@ class TripRequestController extends Controller
      */
     private function getIncompleteRide(): mixed
     {
-        $trip = $this->trip->getBy(column: 'customer_id', value: auth()->id(), attributes: [
-            'withAvgRelation' => 'driverReceivedReviews',
-            'withAvgColumn' => 'rating',
-            'relations' => ['customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
-                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo', 'customerReceivedReviews', 'driverReceivedReviews']
-        ]);
-
-        if (!$trip || $trip->type != 'ride_request' ||
-            $trip->fee->cancelled_by == 'driver' ||
-            (!$trip->driver_id && $trip->current_status == 'cancelled') ||
-            ($trip->driver_id && $trip->payment_status == PAID)) {
-
+        $customerId = auth("api")->id();
+        if (!$customerId) {
             return null;
         }
-        return $trip;
+
+        $attributes = [
+            "type" => "ride_request",
+            "column" => "customer_id",
+            "value" => $customerId,
+            "relations" => [
+                "customer",
+                "driver",
+                "vehicleCategory",
+                "vehicleCategory.tripFares",
+                "vehicle",
+                "coupon",
+                "time",
+                "coordinate",
+                "fee",
+                "tripStatus",
+                "zone",
+                "vehicle.model",
+                "fare_biddings",
+                "parcel",
+                "parcelUserInfo",
+                "customerReceivedReviews",
+                "driverReceivedReviews",
+                "driver.lastLocations"
+            ]
+        ];
+
+        $tripRequest = $this->trip->getIncompleteRide($attributes);
+        if (!$tripRequest) {
+            return null;
+        }
+
+        return $this->trip->getBy(column: "id", value: $tripRequest->id, attributes: [
+            "withAvgRelation" => "driverReceivedReviews",
+            "withAvgColumn" => "rating",
+            "relations" => $attributes["relations"],
+        ]);
     }
 
-    private function getResumeRide(): mixed
+private function getResumeRide(): mixed
     {
         $attributes = [
             'type' => 'ride_request',

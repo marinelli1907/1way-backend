@@ -20,7 +20,17 @@ class ZoneRepository extends BaseRepository implements ZoneRepositoryInterface
 
     public function getByPoints($point)
     {
-        return $this->model->whereContains('coordinates', $point);
+        
+        // Force SRID 4326 and correct axis order for MySQL: POINT(lng lat)
+        // Avoid spatial macro whereContains() generating SRID=0 / axis-order variants.
+        $lng = $point->lng ?? $point->longitude ?? null;
+        $lat = $point->lat ?? $point->latitude ?? null;
+
+        return $this->model->whereRaw(
+            "ST_Contains(`coordinates`, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326))",
+            [$lng, $lat]
+        );
+    
     }
 
     public function findOne($id, array $relations = [], array $withAvgRelations = [],array $whereHasRelations = [], array $withCountQuery = [], bool $withTrashed = false, bool $onlyTrashed = false): ?Model

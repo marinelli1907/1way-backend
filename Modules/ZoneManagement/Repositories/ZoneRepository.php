@@ -172,7 +172,16 @@ class ZoneRepository implements ZoneInterface
      */
     public function getByPoints($point): mixed
     {
-        return $this->zone->whereContains('coordinates',$point)->first();
+        
+        // Force SRID 4326 and correct axis order for MySQL: POINT(lng lat)
+        $lng = $point->lng ?? $point->longitude ?? null;
+        $lat = $point->lat ?? $point->latitude ?? null;
+
+        return $this->zone->whereRaw(
+            "ST_Contains(`coordinates`, ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326))",
+            [$lng, $lat]
+        );
+    
     }
 
     /**
