@@ -22,3 +22,37 @@ yarn-error.log
 elect*
 er_type*
 ers')*
+
+# === Local junk / scratch ===
+*.bak.*
+*.bak
+*.disabled
+*.applyCoupon.*
+*.srid_fix
+*.srid_contains_fix
+*.no_direct_find
+*_audit_*/
+audit_*/
+before/
+after/
+changes/
+double
+array,
+"= ongoing"
+original
+original[]
+level
+message
+model
+sequence
+first_name
+scripts/
+app/public/
+public/assets/1way/
+public/assets/css/
+public/images/
+
+# ripgrep / temp outputs
+*.tmp
+*.swp
+*~
