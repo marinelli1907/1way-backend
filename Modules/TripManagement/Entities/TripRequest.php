@@ -27,6 +27,47 @@ use Modules\ZoneManagement\Entities\Zone;
 
 class TripRequest extends Model
 {
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            try {
+                // Enforce driver_id for driver-required statuses
+                if ($model->isDirty('current_status')) {
+                    $to = strtolower(trim((string) ($model->current_status ?? '')));
+
+                    $requiresDriver = in_array($to, [
+                        'accepted',
+                        'out_for_pickup',
+                        'picked_up',
+                        'ongoing',
+                        'completed',
+                        'returning',
+                        'returned',
+                    ], true);
+
+                    if ($requiresDriver && empty($model->driver_id)) {
+                        \Illuminate\Support\Facades\Log::warning('Blocked TripRequest status change without driver_id', [
+                            'trip_id' => $model->id ?? null,
+                            'from'    => $model->getOriginal('current_status'),
+                            'to'      => $to,
+                        ]);
+
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'driver_id' => ["Cannot set status '{$to}' without a driver assigned."],
+                        ]);
+                    }
+                }
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                // IMPORTANT: do not swallow validation guards
+                throw $e;
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error("TripRequest::booted guard failure", ["trip_id" => $model->id ?? null, "current_status" => $model->current_status ?? null, "driver_id" => $model->driver_id ?? null, "error" => $e->getMessage(),]);
+                // swallow: never block saves due to safety-net failure
+            }
+        });
+    }
+
+
     use HasFactory, HasUuid, SoftDeletes;
 
     protected $fillable = [
@@ -122,11 +163,11 @@ class TripRequest extends Model
     {
         return $this->hasMany(TripRoute::class);
     }
-
     public function tripStatus()
     {
-        return $this->hasOne(TripStatus::class, 'trip_request_id');
+        return $this->hasOne(\Modules\TripManagement\Entities\TripStatus::class, 'trip_request_id', 'id');
     }
+
 
     public function vehicle()
     {

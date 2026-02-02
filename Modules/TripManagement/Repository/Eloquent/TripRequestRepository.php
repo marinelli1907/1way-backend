@@ -10,6 +10,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\Eloquent\Model;
 use Modules\TripManagement\Entities\TripRequest;
+use Modules\TripManagement\Lib\TripStatusTransition;
 use Modules\TripManagement\Repository\TripRequestRepositoryInterface;
 
 class TripRequestRepository extends BaseRepository implements TripRequestRepositoryInterface
@@ -103,16 +104,73 @@ class TripRequestRepository extends BaseRepository implements TripRequestReposit
     {
         $trip = $this->findOne(id: $attributes['value']);
 
-        if ($attributes['trip_status'] ?? null) {
-            $tripData['current_status'] = $attributes['trip_status'];
+        // --- Trip status update (canonical, safe) ---
+        
+if ($attributes['trip_status'] ?? null) {
+            $to = strtolower(trim((string) $attributes['trip_status']));
 
-            $trip->update($tripData);
-            $trip->tripStatus()->update([
-                $attributes['trip_status'] => now()
-            ]);
+
+
+            // If driver_id is provided with a status update, persist it BEFORE guard/transition checks.
+            if (!empty($attributes['driver_id'])) {
+                $trip->driver_id = $attributes['driver_id'];
+                $trip->save();
+            }
+
+            // If driver_id is provided with a status update, apply it BEFORE saving status.
+            if (!empty($attributes['driver_id'])) {
+                $trip->driver_id = $attributes['driver_id'];
+                $trip->save();
+            }
+$cols = TripStatusTransition::columns();
+            if (!in_array($to, $cols, true)) {
+                return $trip->tripStatus;
+            }
+
+            // Update trip_requests first
+            $trip->current_status = $to;
+            $trip->save();
+
+            // Ensure trip_status row exists; if missing, INSERT with pending backfill.
+            $exists = DB::table('trip_status')
+                ->where('trip_request_id', $trip->id)
+                ->exists();
+
+            // pending backfill for inserts (use trip created_at when possible)
+            $__pending_ts = $trip->created_at ? $trip->created_at : now();
+
+            if (!$exists) {
+                DB::table('trip_status')->insert([
+                    'trip_request_id' => $trip->id,
+                    'customer_id'     => $trip->customer_id ?? null,
+                    'driver_id'       => $trip->driver_id ?? null,
+
+                    'pending'         => $__pending_ts,
+                    $to               => now(),
+
+                    'created_at'      => $__pending_ts,
+                    'updated_at'      => now(),
+                ]);
+            } else {
+                DB::table('trip_status')
+                    ->where('trip_request_id', $trip->id)
+                    ->update([
+                        $to           => now(),
+                        'customer_id' => $trip->customer_id ?? null,
+                        'driver_id'   => $trip->driver_id ?? null,
+                        'updated_at'  => now(),
+                    ]);
+            }
         }
-        if ($attributes['driver_id'] ?? null) {
+
+        // Driver assignment/unassignment behavior:
+        // - Only unassign when explicitly requested.
+        // - Do NOT wipe driver_id just because the key exists.
+        if (!empty($attributes['unassign_driver']) && $attributes['unassign_driver'] === true) {
             $trip->driver_id = null;
+            $trip->save();
+        } elseif (array_key_exists('driver_id', $attributes) && $attributes['driver_id']) {
+            $trip->driver_id = $attributes['driver_id'];
             $trip->save();
         }
 
@@ -122,8 +180,10 @@ class TripRequestRepository extends BaseRepository implements TripRequestReposit
         if ($attributes['fee'] ?? null) {
             $trip->fee()->update($attributes['fee']);
         }
+
         return $trip->tripStatus;
     }
+
 
 
     public function findOneWithAvg(array $criteria = [], array $relations = [], array $withCountQuery = [], bool $withTrashed = false, bool $onlyTrashed = false, array $withAvgRelation = []): ?Model

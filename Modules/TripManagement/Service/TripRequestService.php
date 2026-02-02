@@ -612,7 +612,9 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             };
             $adminCommission = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
             $vatTax = $this->tripRequestRepository->getBy(criteria: $criteriaForStatistics, whereBetweenCriteria: $whereBetweenCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.vat_tax');
-            $totalAdminCommission[$rideType[$i]] = number_format($adminCommission, $points, '.', '');
+
+            // FIX: keep consistent with zone-wise stats (net commission after VAT)
+            $totalAdminCommission[$rideType[$i]] = number_format($adminCommission - $vatTax, $points, '.', '');
         }
         return [
             'label' => $rideType,
@@ -907,13 +909,19 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
     {
         $admin_trip_commission = (float)get_cache('trip_commission') ?? 0;
         $vat_percent = (float)get_cache('vat_percent') ?? 1;
-        $final_fare_without_tax = ($trip->paid_fare - $trip->fee->vat_tax - $trip->fee->tips) - $response['discount'];
+
+        // FIX: tips are on trip (not on fee)
+        $tips = (float)($trip->tips ?? 0);
+
+        $final_fare_without_tax = ($trip->paid_fare - $trip->fee->vat_tax - $tips) - $response['discount'];
         $vat = ($vat_percent * $final_fare_without_tax) / 100;
         $admin_commission = (($final_fare_without_tax * $admin_trip_commission) / 100) + $vat;
+
         $updateTrip = $this->findOne(id: $tripId);
         $updateTrip->coupon_id = $cuponId;
         $updateTrip->coupon_amount = $response['discount'];
-        $updateTrip->paid_fare = $final_fare_without_tax + $vat + $trip->fee->tips;
+        $updateTrip->paid_fare = $final_fare_without_tax + $vat + $tips;
+
         $updateTrip->fee()->update([
             'vat_tax' => $vat,
             'admin_commission' => $admin_commission
@@ -958,7 +966,15 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
                         user_id: $trip->driver->id
                     );
                 }
-                $this->driverDetailService->updateBy(criteria: ['user_id' => $trip->driver_id], data: ['availability_status' => 'available']);
+                
+$authId = auth("api")->id();
+            if ($authId) {
+                $this->driverDetailService->updateBy(
+                    ["user_id" => $authId],
+                    ["availability_status" => "available"]
+                );
+            }
+
                 $attributes['driver_id'] = $trip->driver_id;
             } else {
                 $notification = [
@@ -1030,11 +1046,15 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
 
         $trip = $this->findOne(id: $trip->id);
         $vat_percent = (float)get_cache('vat_percent') ?? 1;
-        $final_fare_without_tax = ($trip->paid_fare - $trip->fee->vat_tax - $trip->fee->tips) + $trip->coupon_amount;
+
+        // FIX: tips are on trip (not on fee)
+        $tips = (float)($trip->tips ?? 0);
+
+        $final_fare_without_tax = ($trip->paid_fare - $trip->fee->vat_tax - $tips) + $trip->coupon_amount;
         $vat = ($vat_percent * $final_fare_without_tax) / 100;
         $trip->coupon_id = null;
         $trip->coupon_amount = 0;
-        $trip->paid_fare = $final_fare_without_tax + $vat + $trip->fee->tips;
+        $trip->paid_fare = $final_fare_without_tax + $vat + $tips;
         $trip->fee()->update([
             'vat_tax' => $vat
         ]);
@@ -1176,23 +1196,22 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
 
     public function getTripOverview($data)
     {
-
-        if ($data['filter'] == THIS_WEEK) {
-            $dateRange = THIS_WEEK;
-        }
-        if ($data['filter'] == LAST_WEEK) {
-            $dateRange = LAST_WEEK;
-        }
+        // FIX: dateRange could be undefined + logic was swapped
+        $dateRange = $data['filter'] ?? THIS_WEEK;
 
         switch ($dateRange) {
-            case LAST_WEEK:
+            case THIS_WEEK:
                 $startDate = Carbon::now()->startOfWeek();
                 $endDate = Carbon::now()->endOfWeek();
                 break;
+
+            case LAST_WEEK:
             default:
                 $startDate = Carbon::now()->subWeek()->startOfWeek();
                 $endDate = Carbon::now()->subWeek()->endOfWeek();
+                break;
         }
+
         $period = CarbonPeriod::create($startDate, $endDate);
 
         $whereBetweenCriteria = [

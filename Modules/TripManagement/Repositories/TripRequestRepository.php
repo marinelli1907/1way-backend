@@ -3,24 +3,20 @@
 namespace Modules\TripManagement\Repositories;
 
 use Carbon\Carbon;
-use MatanYadaev\EloquentSpatial\Objects\Point;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use MatanYadaev\EloquentSpatial\Objects\Point;
 use Modules\TripManagement\Entities\TripRequest;
 use Modules\TripManagement\Interfaces\TripRequestInterfaces;
 
 class TripRequestRepository implements TripRequestInterfaces
 {
-
     public function __construct(
         private TripRequest $trip
-    )
-    {
-
-    }
+    ) {}
 
     /**
      * @param int $limit
@@ -31,8 +27,14 @@ class TripRequestRepository implements TripRequestInterfaces
      * @param array $relations
      * @return LengthAwarePaginator|array|Collection
      */
-    public function get(int $limit, int $offset, bool $dynamic_page = false, array $except = [], array $attributes = [], array $relations = []): LengthAwarePaginator|array|Collection
-    {
+    public function get(
+        int $limit,
+        int $offset,
+        bool $dynamic_page = false,
+        array $except = [],
+        array $attributes = [],
+        array $relations = []
+    ): LengthAwarePaginator|array|Collection {
         $search = $attributes['search'] ?? null;
         $extraColumn = $attributes['column_name'] ?? null;
         $extraColumnValue = $attributes['column_value'] ?? null;
@@ -50,24 +52,19 @@ class TripRequestRepository implements TripRequestInterfaces
             })
             ->when(($attributes['relations'] ?? null), fn($query) => $query->with($attributes['relations']))
             ->when(!empty($relations), fn($query) => $query->with($relations))
-            ->when($attributes['from'] ?? null,
-                fn($query) => $query->whereBetween('created_at', [$attributes['from'], $attributes['to']]))
-            ->when($attributes['column'] ?? null,
-                fn($query) => $query->where($attributes['column'], $attributes['value']))
-            ->when($extraColumn && $extraColumnValue,
-                fn($query) => $query->whereIn($extraColumn, $extraColumnValue))
-            ->when(($attributes['whereNotInColumn'] ?? null),
-                fn($query) => $query->whereNotIn($attributes['whereNotInColumn'], $attributes['whereNotInValue']))
-            ->when(($attributes['withAvgRelation'] ?? null),
-                fn($query) => $query->withAvg($attributes['withAvgRelation'], $attributes['withAvgColumn']))
+            ->when($attributes['from'] ?? null, fn($query) => $query->whereBetween('created_at', [$attributes['from'], $attributes['to']]))
+            ->when($attributes['column'] ?? null, fn($query) => $query->where($attributes['column'], $attributes['value']))
+            ->when($extraColumn && $extraColumnValue, fn($query) => $query->whereIn($extraColumn, $extraColumnValue))
+            ->when(($attributes['whereNotInColumn'] ?? null), fn($query) => $query->whereNotIn($attributes['whereNotInColumn'], $attributes['whereNotInValue']))
+            ->when(($attributes['withAvgRelation'] ?? null), fn($query) => $query->withAvg($attributes['withAvgRelation'], $attributes['withAvgColumn']))
             ->when(($attributes['type'] ?? null), fn($query) => $query->type($attributes['type']))
             ->latest();
 
         if ($dynamic_page) {
             return $query->paginate(perPage: $limit, page: $offset);
         }
-        return $query->paginate($limit)
-            ->appends($queryParams);
+
+        return $query->paginate($limit)->appends($queryParams);
     }
 
     /**
@@ -84,116 +81,303 @@ class TripRequestRepository implements TripRequestInterfaces
         return $this->trip
             ->query()
             ->when(($attributes['relations'] ?? null), fn($query) => $query->with($attributes['relations']))
-            ->when(($attributes['fare_biddings'] ?? null),
-                fn($query) => $query->with(['fare_biddings' => fn($query) => $query->where('driver_id', $attributes['fare_biddings'])]))
+            ->when(($attributes['fare_biddings'] ?? null), fn($query) => $query->with([
+                'fare_biddings' => fn($query) => $query->where('driver_id', $attributes['fare_biddings'])
+            ]))
             ->when($column && $value, fn($query) => $query->where($column, $value))
             ->when($extraColumn, fn($query) => $query->where($extraColumn, $extraColumnValue))
             ->when($attributes['latest'] ?? null, fn($query) => $query->latest())
-            ->when(($attributes['whereNotInColumn'] ?? null),
-                fn($query) => $query->whereNotIn($attributes['whereNotInColumn'], $attributes['whereNotInValue']))
-            ->when(($attributes['withAvgRelation'] ?? null),
-                fn($query) => $query->withAvg($attributes['withAvgRelation'], $attributes['withAvgColumn']))
+            ->when(($attributes['whereNotInColumn'] ?? null), fn($query) => $query->whereNotIn($attributes['whereNotInColumn'], $attributes['whereNotInValue']))
+            ->when(($attributes['withAvgRelation'] ?? null), fn($query) => $query->withAvg($attributes['withAvgRelation'], $attributes['withAvgColumn']))
             ->when(($attributes['withTrashed'] ?? null), fn($query) => $query->withTrashed())
             ->latest()
             ->first();
     }
 
     /**
-     * @param array $attributes
-     * @return Model
+     * Store trip request (supports BOTH schemas):
+     * 1) Old spatial schema: trip_request_coordinates has pickup_coordinates/start/destination/etc
+     * 2) New json schema:   trip_request_coordinates has pickup_location/dropoff_location/polyline/distance_km/duration_min/provider/raw_response
      */
     public function store(array $attributes): Model
     {
         try {
-
             DB::beginTransaction();
 
             $trip = $this->trip;
+
             $trip->customer_id = $attributes['customer_id'] ?? null;
             $trip->vehicle_category_id = $attributes['vehicle_category_id'] ?? null;
             $trip->zone_id = $attributes['zone_id'] ?? null;
             $trip->area_id = $attributes['area_id'] ?? null;
-            $trip->actual_fare = $attributes['actual_fare'];
+
+            $trip->actual_fare = $attributes['actual_fare'] ?? 0;
             $trip->estimated_fare = $attributes['estimated_fare'] ?? 0;
             $trip->return_fee = $attributes['return_fee'] ?? 0;
             $trip->cancellation_fee = $attributes['cancellation_fee'] ?? 0;
+
             $trip->extra_fare_fee = $attributes['extra_fare_fee'] ?? 0;
             $trip->extra_fare_amount = $attributes['extra_fare_amount'] ?? 0;
             $trip->rise_request_count = $attributes['rise_request_count'] ?? 0;
-            $trip->estimated_distance = str_replace(',', '', $attributes['estimated_distance']) ?? null;
+
+            $trip->estimated_distance = isset($attributes['estimated_distance'])
+                ? str_replace(',', '', (string)$attributes['estimated_distance'])
+                : null;
+
             $trip->payment_method = $attributes['payment_method'] ?? null;
             $trip->note = $attributes['note'] ?? null;
             $trip->type = $attributes['type'];
             $trip->entrance = $attributes['entrance'] ?? null;
+
+            // Keep existing field name used in code
             $trip->encoded_polyline = $attributes['encoded_polyline'] ?? null;
+
             $trip->save();
 
             $trip->tripStatus()->create([
-                'customer_id' => $attributes['customer_id'],
-                'pending' => now()
+                'customer_id' => $attributes['customer_id'] ?? null,
+                'pending' => now(),
             ]);
 
-            $coordinates = [
-                'pickup_coordinates' => $attributes['pickup_coordinates'],
-                'start_coordinates' => $attributes['pickup_coordinates'],
-                'destination_coordinates' => $attributes['destination_coordinates'],
-                'pickup_address' => $attributes['pickup_address'],
-                'destination_address' => $attributes['destination_address'],
-                'customer_request_coordinates' => $attributes['customer_request_coordinates']
-            ];
-            $int_coordinates = json_decode($attributes['intermediate_coordinates']);
-            if (!is_null($int_coordinates)) {
-                foreach ($int_coordinates as $key => $ic) {
-                    if ($key == 0) {
-                        $coordinates['int_coordinate_1'] = new Point($ic[0], $ic[1]);
-                    } elseif ($key == 1) {
-                        $coordinates['int_coordinate_2'] = new Point($ic[0], $ic[1]);
+            // --- Coordinate write: detect schema ---
+            $hasSpatialPickup = Schema::hasColumn('trip_request_coordinates', 'pickup_coordinates');
+            $hasJsonPickup = Schema::hasColumn('trip_request_coordinates', 'pickup_location');
+
+            /**
+             * Normalize intermediate inputs:
+             * - Accept: null, '', '[]', '"[]"', JSON string, or array
+             * - Returns JSON string for safe decoding
+             */
+            $normalizeJsonArray = function ($value): ?string {
+                if ($value === null) {
+                    return null;
+                }
+
+                if (is_array($value)) {
+                    return json_encode($value);
+                }
+
+                $value = trim((string)$value);
+                if ($value === '') {
+                    return null;
+                }
+
+                // If it's a JSON-encoded string like '"[]"' decode once
+                if (strlen($value) >= 2 && $value[0] === '"' && $value[strlen($value) - 1] === '"') {
+                    $decodedOnce = json_decode($value, true);
+                    if (json_last_error() === JSON_ERROR_NONE) {
+                        if (is_array($decodedOnce)) {
+                            return json_encode($decodedOnce);
+                        }
+                        if (is_string($decodedOnce)) {
+                            $value = trim($decodedOnce);
+                        }
                     }
                 }
 
-            }
-            $coordinates['intermediate_coordinates'] = $attributes['intermediate_coordinates'] ?? null;
-            $coordinates['intermediate_addresses'] = $attributes['intermediate_addresses'] ?? null;
+                $decoded = json_decode($value, true);
+                if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                    return json_encode($decoded);
+                }
 
-            $trip->coordinate()->create($coordinates);
+                return null;
+            };
+
+            /**
+             * Decode JSON into an ARRAY safely.
+             * Handles double-encoded JSON like '"[]"' that would otherwise become a string "[]".
+             */
+            $decodeToArray = function (?string $json): array {
+                if ($json === null) return [];
+                $json = trim($json);
+                if ($json === '') return [];
+
+                $decoded = json_decode($json, true);
+                if (json_last_error() !== JSON_ERROR_NONE) {
+                    return [];
+                }
+
+                if (is_array($decoded)) {
+                    return $decoded;
+                }
+
+                // If it decoded to a string like "[]", decode again
+                if (is_string($decoded)) {
+                    $decoded2 = json_decode($decoded, true);
+                    if (json_last_error() === JSON_ERROR_NONE && is_array($decoded2)) {
+                        return $decoded2;
+                    }
+                }
+
+                return [];
+            };
+
+            if ($hasSpatialPickup) {
+                // OLD SPATIAL SCHEMA
+                $coordinates = [
+                    'pickup_coordinates' => $attributes['pickup_coordinates'],
+                    'start_coordinates' => $attributes['pickup_coordinates'],
+                    'destination_coordinates' => $attributes['destination_coordinates'],
+                    'pickup_address' => $attributes['pickup_address'] ?? null,
+                    'destination_address' => $attributes['destination_address'] ?? null,
+                    'customer_request_coordinates' => $attributes['customer_request_coordinates'] ?? null,
+                ];
+
+                // Intermediate points are optional - DO NOT hard-index
+                $rawIntermediate = $attributes['intermediate_coordinates'] ?? null;
+                $int_coordinates = $rawIntermediate !== null && $rawIntermediate !== ''
+                    ? json_decode($rawIntermediate, true)
+                    : null;
+
+                if (is_array($int_coordinates)) {
+                    foreach ($int_coordinates as $key => $ic) {
+                        if (!is_array($ic) || count($ic) < 2) continue;
+                        if ($key == 0) {
+                            $coordinates['int_coordinate_1'] = new Point($ic[0], $ic[1]);
+                        } elseif ($key == 1) {
+                            $coordinates['int_coordinate_2'] = new Point($ic[0], $ic[1]);
+                        }
+                    }
+                }
+
+                $normalizedIntermediate = $normalizeJsonArray($rawIntermediate) ?? '[]';
+                $normalizedIntermediateAddresses = $normalizeJsonArray($attributes['intermediate_addresses'] ?? null) ?? '[]';
+
+                // IMPORTANT: always store as ARRAY (prevents DB value becoming '"[]"' )
+                $coordinates['intermediate_coordinates'] = $decodeToArray($normalizedIntermediate);
+                $coordinates['intermediate_addresses'] = $decodeToArray($normalizedIntermediateAddresses);
+
+                $trip->coordinate()->create($coordinates);
+            } elseif ($hasJsonPickup) {
+                // NEW JSON SCHEMA
+                $pickupPoint = $attributes['pickup_coordinates'] ?? null;
+                $dropoffPoint = $attributes['destination_coordinates'] ?? null;
+
+                // Normalize raw_response (allow array/object JSON, or a JSON string, or null)
+                $raw = $attributes['raw_response'] ?? null;
+                if (is_string($raw)) {
+                    $rawTrim = trim($raw);
+                    if (strlen($rawTrim) >= 2 && $rawTrim[0] === '"' && $rawTrim[strlen($rawTrim) - 1] === '"') {
+                        $decodedOnce = json_decode($rawTrim, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $raw = $decodedOnce;
+                        }
+                    } else {
+                        $decoded = json_decode($rawTrim, true);
+                        if (json_last_error() === JSON_ERROR_NONE) {
+                            $raw = $decoded;
+                        }
+                    }
+                }
+
+                $pickupJson = $this->pointToJsonLocation(
+                    point: $pickupPoint,
+                    address: $attributes['pickup_address'] ?? null
+                );
+
+                $dropoffJson = $this->pointToJsonLocation(
+                    point: $dropoffPoint,
+                    address: $attributes['destination_address'] ?? null
+                );
+
+                $trip->coordinate()->create([
+                    'pickup_location' => $pickupJson ? json_encode($pickupJson) : null,
+                    'dropoff_location' => $dropoffJson ? json_encode($dropoffJson) : null,
+                    'polyline' => $attributes['encoded_polyline'] ?? null,
+                    'distance_km' => isset($attributes['estimated_distance'])
+                        ? (float)str_replace(',', '', (string)$attributes['estimated_distance'])
+                        : null,
+                    'duration_min' => isset($attributes['estimated_time'])
+                        ? (int)str_replace(',', '', (string)$attributes['estimated_time'])
+                        : null,
+                    'provider' => $attributes['provider'] ?? null,
+                    'raw_response' => $raw,
+                ]);
+            } else {
+                // Unknown schema - skip coordinate create rather than hard-crash
+            }
+
             $trip->fee()->create();
+
             $trip->time()->create([
-                'estimated_time' => str_replace(',', '', $attributes['estimated_time'])
+                'estimated_time' => isset($attributes['estimated_time'])
+                    ? str_replace(',', '', (string)$attributes['estimated_time'])
+                    : null,
             ]);
 
-            if ($attributes['type'] == 'parcel') {
+            if (($attributes['type'] ?? null) === 'parcel') {
                 $trip->parcel()->create([
-                    'payer' => $attributes['payer'],
-                    'weight' => $attributes['weight'],
-                    'parcel_category_id' => $attributes['parcel_category_id'],
+                    'payer' => $attributes['payer'] ?? null,
+                    'weight' => $attributes['weight'] ?? null,
+                    'parcel_category_id' => $attributes['parcel_category_id'] ?? null,
                 ]);
 
                 $sender = [
-                    'name' => $attributes['sender_name'],
-                    'contact_number' => $attributes['sender_phone'],
-                    'address' => $attributes['sender_address'],
-                    'user_type' => 'sender'
+                    'name' => $attributes['sender_name'] ?? null,
+                    'contact_number' => $attributes['sender_phone'] ?? null,
+                    'address' => $attributes['sender_address'] ?? null,
+                    'user_type' => 'sender',
                 ];
-                $receiver = [
-                    'name' => $attributes['receiver_name'],
-                    'contact_number' => $attributes['receiver_phone'],
-                    'address' => $attributes['receiver_address'],
-                    'user_type' => 'receiver'
-                ];
-                $trip->parcelUserInfo()->createMany([$sender, $receiver]);
 
+                $receiver = [
+                    'name' => $attributes['receiver_name'] ?? null,
+                    'contact_number' => $attributes['receiver_phone'] ?? null,
+                    'address' => $attributes['receiver_address'] ?? null,
+                    'user_type' => 'receiver',
+                ];
+
+                $trip->parcelUserInfo()->createMany([$sender, $receiver]);
             }
 
             DB::commit();
-
         } catch (\Exception $e) {
-            //throw $th;
             DB::rollback();
             abort(403, message: $e->getMessage());
         }
 
         return $this->trip;
+    }
 
+    /**
+     * Converts a Point or array into a consistent JSON payload for pickup_location/dropoff_location.
+     * Supports:
+     * - Point object (MatanYadaev)
+     * - ['lat'=>..,'lng'=>..] OR ['latitude'=>..,'longitude'=>..]
+     * - ['coordinates'=>[lat,lng]] etc (best-effort)
+     */
+    private function pointToJsonLocation(mixed $point, ?string $address = null): ?array
+    {
+        if ($point instanceof Point) {
+            $lat = $point->latitude;
+            $lng = $point->longitude;
+
+            return [
+                'address' => $address,
+                'lat' => (float)$lat,
+                'lng' => (float)$lng,
+            ];
+        }
+
+        if (is_array($point)) {
+            $lat = $point['lat'] ?? $point['latitude'] ?? null;
+            $lng = $point['lng'] ?? $point['longitude'] ?? null;
+
+            if ($lat === null && isset($point['coordinates']) && is_array($point['coordinates']) && count($point['coordinates']) >= 2) {
+                // Your API output shows [lat, lng] in "coordinates"
+                $lat = $point['coordinates'][0];
+                $lng = $point['coordinates'][1];
+            }
+
+            if ($lat !== null && $lng !== null) {
+                return [
+                    'address' => $address,
+                    'lat' => (float)$lat,
+                    'lng' => (float)$lng,
+                ];
+            }
+        }
+
+        return null;
     }
 
     /**
@@ -205,13 +389,16 @@ class TripRequestRepository implements TripRequestInterfaces
     {
         $trip = $this->trip->firstWhere($attributes['column'], $id);
 
-        $trip_request_keys = ['customer_id', 'driver_id', 'vehicle_category_id', 'vehicle_id', 'zone_id', 'estimated_fare', 'actual_fare', 'extra_fare_amount',
-            'estimated_distance', 'paid_fare', 'actual_distance', 'accepted_by', 'payment_method', 'payment_status', 'coupon_id',
-            'coupon_amount', 'vat_tax', 'additional_charge', 'trx_id', 'note', 'otp', 'rise_request_count', 'type', 'current_status', 'tips',
-            'is_paused', 'map_screenshot'
+        $__from_status = strtolower(trim((string)($trip->current_status ?? '')));
+
+        $trip_request_keys = [
+            'customer_id', 'driver_id', 'vehicle_category_id', 'vehicle_id', 'zone_id', 'estimated_fare', 'actual_fare',
+            'extra_fare_amount', 'estimated_distance', 'paid_fare', 'actual_distance', 'accepted_by', 'payment_method',
+            'payment_status', 'coupon_id', 'coupon_amount', 'vat_tax', 'additional_charge', 'trx_id', 'note', 'otp',
+            'rise_request_count', 'type', 'current_status', 'tips', 'is_paused', 'map_screenshot',
         ];
 
-        DB::transaction(function () use ($trip_request_keys, $attributes, $trip) {
+        DB::transaction(function () use ($trip_request_keys, $attributes, $trip, $__from_status) {
             foreach ($trip_request_keys as $key) {
                 if ($attributes['rise_request_count'] ?? null) {
                     $trip->increment('rise_request_count');
@@ -219,16 +406,129 @@ class TripRequestRepository implements TripRequestInterfaces
                     ($attributes[$key] ?? null) ? $trip->$key = $attributes[$key] : null;
                 }
             }
-            ($attributes['map_screenshot'] ?? null) ? $trip->map_screenshot = fileUploader('trip/screenshots/', 'png', $attributes['map_screenshot'], $trip->map_screenshot) : null;
+
+            ($attributes['map_screenshot'] ?? null)
+                ? $trip->map_screenshot = fileUploader('trip/screenshots/', 'png', $attributes['map_screenshot'], $trip->map_screenshot)
+                : null;
 
             $trip->save();
-            if ($attributes['tripStatus'] ?? null) {
-                $trip->tripStatus()->update([$attributes['current_status'] => now()]);
-            }
 
+            if ($attributes['tripStatus'] ?? null) {
+                $from = $__from_status;
+                $to   = strtolower(trim((string)($attributes['current_status'] ?? '')));
+
+
+
+                $driver_for_status = $attributes['driver_id']
+    ?? ($attributes['driverId'] ?? null)
+    ?? ($attributes['driver'] ?? null)
+    ?? ($trip->driver_id ?? null);
+
+// Normalize + persist driver assignment immediately if provided alongside status update.
+if (!empty($driver_for_status) && empty($trip->driver_id)) {
+    $trip->driver_id = $driver_for_status;
+    $trip->save();
+}
+
+
+                $requiresDriver = in_array($to, [
+                    'accepted',
+                    'out_for_pickup',
+                    'picked_up',
+                    'ongoing',
+                    'completed',
+                    'returning',
+                    'returned',
+                ], true);
+
+                if ($requiresDriver && empty($driver_for_status)) {
+                    \Illuminate\Support\Facades\Log::warning('Blocked status change without driver_id', [
+                        'trip_id' => $trip->id,
+                        'from'    => $from,
+                        'to'      => $to,
+                    ]);
+
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'trip_status' => ["Cannot set status '{$to}' without a driver assigned."],
+                    ]);
+                }
+
+                if ($to && $to !== $from) {
+                    if (!\Modules\TripManagement\Lib\TripStatusTransition::isValidColumn($to)) {
+                        \Illuminate\Support\Facades\Log::warning('Trip status invalid column (transaction path)', [
+                            'trip_id' => $trip->id,
+                            'to' => $to,
+                        ]);
+
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'current_status' => ["Invalid trip status: {$to}"],
+                        ]);
+                    }
+
+                    if (!\Modules\TripManagement\Lib\TripStatusTransition::canTransition($from, $to)) {
+                        \Illuminate\Support\Facades\Log::warning('Trip status transition blocked (transaction path)', [
+                            'trip_id' => $trip->id,
+                            'from' => $from,
+                            'to' => $to,
+                        ]);
+
+                        throw \Illuminate\Validation\ValidationException::withMessages([
+                            'current_status' => ["Invalid status transition: {$from} -> {$to}"],
+                        ]);
+                    }
+
+                    // Keep trip table in sync too
+                    $trip->current_status = $to;
+                    $trip->save();
+
+                    $__pending_ts = $trip->created_at ?? now();
+
+
+                    $exists = \Illuminate\Support\Facades\DB::table('trip_status')
+                        ->where('trip_request_id', $trip->id)
+                        ->exists();
+
+                    if ($exists) {
+                        
+                $payload = [
+                            'customer_id' => $trip->customer_id,
+                            $to           => now(),
+                            'updated_at'  => now(),
+                        ];
+
+                        // Only set driver_id if we actually have one; never overwrite with null.
+                        if (!empty($driver_for_status)) {
+                            $payload['driver_id'] = $driver_for_status;
+                        }
+
+                        \Illuminate\Support\Facades\DB::table('trip_status')
+                            ->where('trip_request_id', $trip->id)
+                            ->update($payload);
+                    } else {
+                        
+                $payload = [
+                            'trip_request_id' => $trip->id,
+                            'customer_id'     => $trip->customer_id,
+                            // backfill pending using trip created_at (best proxy)
+                            'pending'         => $__pending_ts,
+                            $to               => now(),
+                            'created_at'      => $__pending_ts,
+                            'updated_at'      => now(),
+                        ];
+
+                        // Only set driver_id if we actually have one; never insert null.
+                        if (!empty($driver_for_status)) {
+                            $payload['driver_id'] = $driver_for_status;
+                        }
+
+                        \Illuminate\Support\Facades\DB::table('trip_status')->insert($payload);
+                    }
+                }
+            }
             if ($attributes['driver_arrival_time'] ?? null) {
                 $trip->time()->update(['driver_arrival_time' => $attributes['driver_arrival_time']]);
             }
+
             if ($attributes['coordinate'] ?? null) {
                 $trip->coordinate()->update($attributes['coordinate']);
             }
@@ -237,41 +537,187 @@ class TripRequestRepository implements TripRequestInterfaces
         return $trip;
     }
 
-    /**
-     * @param string $id
-     * @return Model
-     */
     public function destroy(string $id): Model
     {
         $trip = $this->trip->query()->find($id);
         $trip->delete();
-
         return $trip;
     }
 
-    /**
-     * @param $attributes
-     * @return mixed
-     */
     public function updateRelationalTable($attributes): mixed
     {
         $trip = $this->getBy(column: $attributes['column'], value: $attributes['value']);
-        if ($attributes['trip_status'] ?? null) {
-            $trip->current_status = $attributes['trip_status'];
-            $trip->save();
-            $trip->tripStatus()->update([
-                $attributes['trip_status'] => now()
-            ]);
+
+        if ($attributes["trip_status"] ?? null) {
+            $from = strtolower(trim((string)$trip->current_status));
+            $to   = strtolower(trim((string)$attributes["trip_status"]));
+$driver_for_status = $attributes['driver_id']
+    ?? ($attributes['driverId'] ?? null)
+    ?? ($attributes['driver'] ?? null)
+    ?? ($trip->driver_id ?? null);
+
+// Normalize + persist driver assignment immediately if provided alongside status update.
+if (!empty($driver_for_status) && empty($trip->driver_id)) {
+    $trip->driver_id = $driver_for_status;
+    $trip->save();
+}
+
+            $requiresDriver = in_array($to, [
+                'accepted',
+                'out_for_pickup',
+                'picked_up',
+                'ongoing',
+                'completed',
+                'returning',
+                'returned',
+            ], true);
+
+            if ($requiresDriver && empty($driver_for_status)) {
+                \Illuminate\Support\Facades\Log::warning('Blocked status change without driver_id (updateRelationalTable)', [
+                    'trip_id' => $trip->id,
+                    'from'    => $from,
+                    'to'      => $to,
+                ]);
+
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'trip_status' => ["Cannot set status '{$to}' without a driver assigned."],
+                ]);
+            }
+$requiresDriver = in_array($to, [
+                    'accepted',
+                    'out_for_pickup',
+                    'picked_up',
+                    'ongoing',
+                    'completed',
+                    'returning',
+                    'returned',
+                ], true);
+
+                
+                $driver_for_status = $attributes['driver_id']
+    ?? ($attributes['driverId'] ?? null)
+    ?? ($attributes['driver'] ?? null)
+    ?? ($trip->driver_id ?? null);
+
+// Normalize + persist driver assignment immediately if provided alongside status update.
+if (!empty($driver_for_status) && empty($trip->driver_id)) {
+    $trip->driver_id = $driver_for_status;
+    $trip->save();
+}
+
+
+                
+                        $requiresDriver = in_array($to, [
+                            'accepted',
+                            'out_for_pickup',
+                            'picked_up',
+                            'ongoing',
+                            'completed',
+                            'returning',
+                            'returned',
+                        ], true);
+
+                        if ($requiresDriver && empty($driver_for_status)) {
+                    \Illuminate\Support\Facades\Log::warning('Blocked status change without driver_id', [
+                        'trip_id' => $trip->id,
+                        'from'    => $from,
+                        'to'      => $to,
+                    ]);
+
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'trip_status' => ["Cannot set status '{$to}' without a driver assigned."],
+                    ]);
+                }
+
+
+            // If status is unchanged, no-op
+            if ($to !== $from) {
+                if (!\Modules\TripManagement\Lib\TripStatusTransition::isValidColumn($to)) {
+                    \Illuminate\Support\Facades\Log::warning('Trip status invalid column', [
+                        'trip_id' => $trip->id,
+                        'to' => $to,
+                    ]);
+
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'trip_status' => ["Invalid trip status: {$to}"],
+                    ]);
+                }
+
+                if (!\Modules\TripManagement\Lib\TripStatusTransition::canTransition($from, $to)) {
+                    \Illuminate\Support\Facades\Log::warning("Trip status transition blocked", [
+                        "trip_id" => $trip->id,
+                        "from" => $from,
+                        "to" => $to,
+                    ]);
+
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        "trip_status" => ["Invalid status transition: {$from} -> {$to}"],
+                    ]);
+                }
+
+                $trip->current_status = $to;
+                $trip->save();
+
+                $__pending_ts = $trip->created_at ?? now();
+
+                    $exists = \Illuminate\Support\Facades\DB::table('trip_status')
+                        ->where('trip_request_id', $trip->id)
+                        ->exists();
+
+                    if ($exists) {
+                        
+                $payload = [
+                            'customer_id' => $trip->customer_id,
+                            $to           => now(),
+                            'updated_at'  => now(),
+                        ];
+
+                        // Only set driver_id if we actually have one; never overwrite with null.
+                        if (!empty($driver_for_status)) {
+                            $payload['driver_id'] = $driver_for_status;
+                        }
+
+                        \Illuminate\Support\Facades\DB::table('trip_status')
+                            ->where('trip_request_id', $trip->id)
+                            ->update($payload);
+                    } else {
+                        
+                $payload = [
+                            'trip_request_id' => $trip->id,
+                            'customer_id'     => $trip->customer_id,
+                            // backfill pending using trip created_at (best proxy)
+                            'pending'         => $__pending_ts,
+                            $to               => now(),
+                            'created_at'      => $__pending_ts,
+                            'updated_at'      => now(),
+                        ];
+
+                        // Only set driver_id if we actually have one; never insert null.
+                        if (!empty($driver_for_status)) {
+                            $payload['driver_id'] = $driver_for_status;
+                        }
+
+                        \Illuminate\Support\Facades\DB::table('trip_status')->insert($payload);
+                    }
+            }
         }
+
         if ($attributes['trip_cancellation_reason'] ?? null) {
             $trip->trip_cancellation_reason = $attributes['trip_cancellation_reason'];
             $trip->save();
         }
 
-        if ($attributes['driver_id'] ?? null) {
+        // Driver assignment/unassignment behavior:
+        // - Only unassign when explicitly requested.
+        // - Do NOT wipe driver_id just because the key exists.
+        if (!empty($attributes['unassign_driver']) && $attributes['unassign_driver'] === true) {
             $trip->driver_id = null;
             $trip->save();
+        } elseif (array_key_exists('driver_id', $attributes) && $attributes['driver_id']) {
+            $trip->driver_id = $attributes['driver_id'];
+            $trip->save();
         }
+
 
         if ($attributes['coordinate'] ?? null) {
             $coordinate = $trip->coordinate;
@@ -282,52 +728,58 @@ class TripRequestRepository implements TripRequestInterfaces
                 $coordinate->save();
             }
         }
+
         if ($attributes['fee'] ?? null) {
             $trip->fee()->update($attributes['fee']);
         }
+
         return $trip->tripStatus;
     }
 
     /**
-     * @param $attributes
-     * @return mixed
+     * DRIVER: pending rides list
+     * - If spatial column exists => keep distanceSphere filtering
+     * - If NOT => return pending rides in zone (no distance filter) to avoid empty lists / crashes
      */
     public function getPendingRides($attributes): mixed
     {
+        $hasSpatialPickup = Schema::hasColumn('trip_request_coordinates', 'pickup_coordinates');
+
         $query = $this->trip
             ->when($attributes['relations'] ?? null, fn($query) => $query->with($attributes['relations']))
             ->with([
                 'fare_biddings' => fn($query) => $query->where('driver_id', auth()->id()),
-                'coordinate' => fn($query) => $query->distanceSphere('pickup_coordinates', $attributes['driver_locations'], $attributes['distance']),
+                'coordinate' => function ($query) use ($attributes, $hasSpatialPickup) {
+                    if ($hasSpatialPickup && ($attributes['driver_locations'] ?? null) && ($attributes['distance'] ?? null)) {
+                        $query->distanceSphere('pickup_coordinates', $attributes['driver_locations'], $attributes['distance']);
+                    }
+                },
             ])
-            ->whereHas('coordinate', fn($query) => $query->distanceSphere('pickup_coordinates', $attributes['driver_locations'], $attributes['distance']))
-            ->whereDoesntHave('ignoredRequests', fn($query) => $query->where('user_id', auth()->id()))
-            ->where(fn($query) => $query->where('vehicle_category_id', $attributes['vehicle_category_id'])
-                ->orWhereNull('vehicle_category_id')
+            ->when(
+                $hasSpatialPickup && ($attributes['driver_locations'] ?? null) && ($attributes['distance'] ?? null),
+                fn($q) => $q->whereHas('coordinate', fn($qq) => $qq->distanceSphere('pickup_coordinates', $attributes['driver_locations'], $attributes['distance']))
             )
+            ->whereDoesntHave('ignoredRequests', fn($query) => $query->where('user_id', auth()->id()))
+            ->where(fn($query) => $query->where('vehicle_category_id', $attributes['vehicle_category_id'])->orWhereNull('vehicle_category_id'))
             ->where('zone_id', $attributes['zone_id'])
             ->where('current_status', PENDING)
             ->where(function ($query) use ($attributes) {
-                if ($attributes['ride_count'] < 1) {
+                if (($attributes['ride_count'] ?? 0) < 1) {
                     $query->where('type', RIDE_REQUEST);
                 }
 
-                // 2. Parcel request logic based on parcel follow status and parcel count
                 $query->orWhere(function ($query) use ($attributes) {
-                    if ($attributes['parcel_follow_status']) {
-                        // Only include parcels if parcel_count < 2
-                        if ($attributes['parcel_count'] < $attributes['max_parcel_request_accept_limit']) {
+                    if (($attributes['parcel_follow_status'] ?? false)) {
+                        if (($attributes['parcel_count'] ?? 0) < ($attributes['max_parcel_request_accept_limit'] ?? 0)) {
                             $query->where('type', PARCEL);
                         } else {
                             $query->whereNotIn('type', [PARCEL, RIDE_REQUEST]);
                         }
                     } else {
-                        // Include all parcels when parcel_follow_status is false
                         $query->where('type', PARCEL);
                     }
                 });
             });
-
 
         return $query->orderBy('created_at', 'desc')
             ->paginate(perPage: $attributes['limit'], page: $attributes['offset']);
@@ -337,19 +789,14 @@ class TripRequestRepository implements TripRequestInterfaces
     {
         return $this->trip
             ->query()
-            ->whereHas('driver',
-                fn($query) => $query->where('deleted_at', null))
-            ->whereHas('customer',
-                fn($query) => $query->where('deleted_at', null))
+            ->whereHas('driver', fn($query) => $query->where('deleted_at', null))
+            ->whereHas('customer', fn($query) => $query->where('deleted_at', null))
             ->when(($attributes['relations'] ?? null), fn($query) => $query->with($attributes['relations']))
-            ->when(($attributes['whereNotNull'] ?? null),
-                fn($query) => $query->whereNotNull($attributes['whereNotNull']))
+            ->when(($attributes['whereNotNull'] ?? null), fn($query) => $query->whereNotNull($attributes['whereNotNull']))
             ->when(($attributes['selectRaw'] ?? null), fn($query) => $query->selectRaw($attributes['selectRaw']))
             ->when(($attributes['groupBy'] ?? null), fn($query) => $query->groupBy($attributes['groupBy']))
-            ->when(($attributes['orderBy'] ?? null),
-                fn($query) => $query->orderBy($attributes['orderBy'], $attributes['direction'] ?? 'asc'))
-            ->when(($attributes['start'] ?? null),
-                fn($query) => $query->whereBetween('created_at', [$attributes['start'], $attributes['end']]))
+            ->when(($attributes['orderBy'] ?? null), fn($query) => $query->orderBy($attributes['orderBy'], $attributes['direction'] ?? 'asc'))
+            ->when(($attributes['start'] ?? null), fn($query) => $query->whereBetween('created_at', [$attributes['start'], $attributes['end']]))
             ->paginate(perPage: $attributes['limit'], page: $attributes['offset']);
     }
 
@@ -365,6 +812,7 @@ class TripRequestRepository implements TripRequestInterfaces
         if ($attributes['count'] ?? null) {
             return $query->count($attributes['count']);
         }
+        return null;
     }
 
     public function getIncompleteRide(array $attributes = []): mixed
@@ -381,7 +829,8 @@ class TripRequestRepository implements TripRequestInterfaces
                     ->where('payment_status', 'unpaid')
                 ))
             ->when(($attributes['type'] ?? null), fn($query) => $query->where('type', $attributes['type']))
-            ->where($attributes['column'], $attributes['value'])->first();
+            ->where($attributes['column'], $attributes['value'])
+            ->first();
     }
 
     public function overviewStat(array $attributes)
@@ -389,13 +838,14 @@ class TripRequestRepository implements TripRequestInterfaces
         return $this->trip->query()
             ->when($attributes['from'] ?? null, fn($query) => $query->whereBetween('created_at', [$attributes['from'], $attributes['to']]))
             ->selectRaw('current_status, count(*) as total_records')
-            ->groupBy('current_status')->get();
+            ->groupBy('current_status')
+            ->get();
     }
-
 
     public function trashed(array $attributes)
     {
         $search = $attributes['search'] ?? null;
+
         return $this->trip->query()
             ->when($search, function ($query) use ($search) {
                 $query->where(function ($query) use ($search) {
@@ -407,7 +857,6 @@ class TripRequestRepository implements TripRequestInterfaces
             })
             ->onlyTrashed()
             ->paginate(paginationLimit());
-
     }
 
     public function restore(string $id)
@@ -415,19 +864,19 @@ class TripRequestRepository implements TripRequestInterfaces
         return $this->trip->query()->onlyTrashed()->find($id)->restore();
     }
 
-
     public function pendingParcelList(array $attributes, string $type)
     {
         if ($type == "driver") {
             return $this->trip->query()
-                ->with(['customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
-                    'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'])
+                ->with([
+                    'customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
+                    'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'
+                ])
                 ->where(['type' => 'parcel', $attributes['column'] => $attributes['value']])
                 ->when($attributes['whereNotNull'] ?? null, fn($query) => $query->whereNotNull($attributes['whereNotNull']))
                 ->where(function ($query) {
                     $query->where(function ($query1) {
-                        $query1->where('current_status', COMPLETED)
-                            ->where('payment_status', UNPAID);
+                        $query1->where('current_status', COMPLETED)->where('payment_status', UNPAID);
                     })->orWhere(function ($query) {
                         $query->whereIn('current_status', [PENDING, ACCEPTED, ONGOING, RETURNING]);
                     });
@@ -436,37 +885,40 @@ class TripRequestRepository implements TripRequestInterfaces
         }
 
         return $this->trip->query()
-            ->with(['customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
-                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'])
+            ->with([
+                'customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
+                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'
+            ])
             ->where(['type' => 'parcel', $attributes['column'] => $attributes['value']])
             ->when($attributes['whereNotNull'] ?? null, fn($query) => $query->whereNotNull($attributes['whereNotNull']))
             ->whereNotIn('current_status', [CANCELLED, COMPLETED, RETURNED])
             ->paginate(perPage: $attributes['limit'], page: $attributes['offset']);
-
     }
 
-    /**
-     * @return Builder|Model|TripRequest|object|null
-     */
     public function unpaidParcelRequest(array $attributes)
     {
         return $this->trip->query()
-            ->with(['customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
-                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'])
+            ->with([
+                'customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
+                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'
+            ])
             ->whereNotNull('driver_id')
             ->where([
                 'type' => 'parcel',
                 $attributes['column'] => $attributes['value'],
                 'payment_status' => UNPAID
             ])
-            ->when($attributes['whereHas'] ?? null, fn($query) => $query->whereHas('parcel',
-                fn($query) => $query->where('payer', 'sender')))
+            ->when($attributes['whereHas'] ?? null, fn($query) => $query->whereHas('parcel', fn($query) => $query->where('payer', 'sender')))
             ->paginate(perPage: $attributes['limit'], page: $attributes['offset']);
     }
 
     public function getPopularTips()
     {
-        return $this->trip->query()->whereNot('tips', 0)->groupBy('tips')->selectRaw('tips, count(*) as total')->orderBy('total', 'desc')->first();
+        return $this->trip->query()
+            ->whereNot('tips', 0)
+            ->groupBy('tips')
+            ->selectRaw('tips, count(*) as total')
+            ->orderBy('total', 'desc')
+            ->first();
     }
-
 }

@@ -2,7 +2,6 @@
 
 namespace Modules\TripManagement\Entities;
 
-use App\Traits\HasUuid;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Modules\UserManagement\Entities\User;
@@ -10,6 +9,63 @@ use Modules\UserManagement\Entities\User;
 class TripStatus extends Model
 {
     use HasFactory;
+
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            try {
+                // Attempt to backfill driver_id from trip_requests if missing
+                if (empty($model->driver_id) && !empty($model->trip_request_id)) {
+                    $driverId = \Illuminate\Support\Facades\DB::table('trip_requests')
+                        ->where('id', $model->trip_request_id)
+                        ->value('driver_id');
+
+                    if (!empty($driverId)) {
+                        $model->driver_id = $driverId;
+                    }
+                }
+
+                // Hard guard: these statuses require an assigned driver.
+                $requiresDriverCols = [
+                    'accepted',
+                    'out_for_pickup',
+                    'picked_up',
+                    'ongoing',
+                    'completed',
+                    'returning',
+                    'returned',
+                ];
+
+                $isSettingDriverRequiredStatus = false;
+
+                foreach ($requiresDriverCols as $col) {
+                    if ($model->isDirty($col) && !empty($model->{$col})) {
+                        $isSettingDriverRequiredStatus = true;
+                        break;
+                    }
+                }
+
+                if ($isSettingDriverRequiredStatus && empty($model->driver_id)) {
+                    \Illuminate\Support\Facades\Log::warning(
+                        'Blocked TripStatus save: driver-required status without driver_id',
+                        [
+                            'trip_request_id' => $model->trip_request_id,
+                            'trip_status_id'  => $model->id ?? null,
+                        ]
+                    );
+
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'driver_id' => ['Cannot set this trip status without a driver assigned.'],
+                    ]);
+                }
+            } catch (\Illuminate\Validation\ValidationException $e) {
+                // Intentional: do not swallow validation guards.
+                throw $e;
+            } catch (\Throwable $e) {
+                // swallow: never block status updates due to safety-net failure
+            }
+        });
+    }
 
     protected $fillable = [
         'trip_request_id',
@@ -26,9 +82,8 @@ class TripStatus extends Model
         'returned',
         'failed',
         'note',
-        'created_at',
-        'updated_at',
     ];
+
     protected $table = 'trip_status';
 
     protected static function newFactory()
@@ -40,6 +95,7 @@ class TripStatus extends Model
     {
         return $this->belongsTo(TripRequest::class);
     }
+
     public function customer()
     {
         return $this->belongsTo(User::class, 'customer_id');
@@ -47,6 +103,6 @@ class TripStatus extends Model
 
     public function driver()
     {
-        return $this->belongsTo(User::class, 'customer_id');
+        return $this->belongsTo(User::class, 'driver_id');
     }
 }
