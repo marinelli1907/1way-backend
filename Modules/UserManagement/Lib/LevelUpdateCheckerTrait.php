@@ -17,6 +17,9 @@ trait LevelUpdateCheckerTrait
     public function customerLevelUpdateChecker($customer)
     {
         $level = $customer->level;
+        if (!$level) {
+            return;
+        }
         $currentSequence = $level->sequence;
         $nextLevel = UserLevel::where('user_type', CUSTOMER)->where('is_active',1)->where('sequence', '>', $currentSequence)->orderBy('sequence', 'asc')->first();
         $userLevelHistory = $this->getUserLevelHistoryByUserLevelId($customer->id,$level->id);
@@ -87,6 +90,9 @@ trait LevelUpdateCheckerTrait
     public function driverLevelUpdateChecker($driver)
     {
         $level = $driver->level;
+        if (!$level) {
+            return User::find($driver->id);
+        }
         $currentSequence = $level->sequence;
         $nextLevel = UserLevel::where('user_type', DRIVER)->where('is_active',1)->where('sequence', '>', $currentSequence)->orderBy('sequence', 'asc')->first();
         $userLevelHistory = $this->getUserLevelHistoryByUserLevelId($driver->id,$level->id);
