@@ -38,7 +38,10 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
     });
 
     Route::controller(DashboardController::class)->group(function () {
-        Route::get('/', 'index')->name('dashboard');
+        
+Route::get('/', 'index')->name('root');
+        Route::get('dashboard', 'index')->name('dashboard');
+        
         Route::get('heat-map', 'heatMap')->name('heat-map');
         Route::get('heat-map-overview-data', 'heatMapOverview')->name('heat-map-overview-data');
         Route::get('heat-map-compare', 'heatMapCompare')->name('heat-map-compare');
