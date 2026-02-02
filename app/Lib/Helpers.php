@@ -518,11 +518,22 @@ if (!function_exists('getCurrencyFormat')) {
 if (!function_exists('getNotification')) {
     function getNotification($key)
     {
-        $notification = FirebasePushNotification::query()->firstWhere('name', $key);
+        $notification = FirebasePushNotification::query()
+            ->where('name', $key)
+            ->first();
+
+        if (!$notification) {
+            return [
+                'title' => ' ',
+                'description' => ' ',
+                'status' => 0,
+            ];
+        }
+
         return [
-            'title' => $notification['name'] ?? ' ',
-            'description' => $notification['value'] ?? ' ',
-            'status' => (bool)$notification['status'] ?? 0,
+            'title' => $notification->name ?? ' ',
+            'description' => $notification->value ?? ' ',
+            'status' => (bool) ($notification->status ?? 0),
         ];
     }
 }

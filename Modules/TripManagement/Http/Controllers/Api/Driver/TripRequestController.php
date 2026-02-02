@@ -260,6 +260,18 @@ class TripRequestController extends Controller
             $attributes['actual_fare'] = $trip->actual_fare;
         }
         Cache::put($trip->id, ACCEPTED, now()->addHour());
+        $coordinate = $trip->coordinate;
+
+        $pickup = $coordinate?->pickup_coordinates;
+
+
+        if (!$pickup || !$user?->lastLocations) {
+
+            return response()->json(responseFormatter(DEFAULT_404), 404);
+
+        }
+
+
         $driverArrivalTime = getRoutes(
             originCoordinates: [
                 $trip->coordinate->pickup_coordinates->latitude,
@@ -320,10 +332,35 @@ class TripRequestController extends Controller
             }
         }
 
-        $trip->tripStatus()->update([
-            'accepted' => now()
-        ]);
-        //deleting exiting rejected driver request for this trip
+                $__pending_ts = $trip->created_at ?? now();
+
+        $exists = \Illuminate\Support\Facades\DB::table('trip_status')
+            ->where('trip_request_id', $trip->id)
+            ->exists();
+
+        if ($exists) {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->where('trip_request_id', $trip->id)
+                ->update([
+                    'driver_id'  => ($trip->driver_id ?? $user->id),
+                    'accepted'      => now(),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->insert([
+                    'trip_request_id' => $trip->id,
+                    'customer_id'     => $trip->customer_id ?? null,
+                    'driver_id'       => ($trip->driver_id ?? $user->id),
+
+                    'pending'         => $__pending_ts,
+                    'accepted'           => now(),
+
+                    'created_at'      => $__pending_ts,
+                    'updated_at'      => now(),
+                ]);
+        }
+//deleting exiting rejected driver request for this trip
         $this->rejectedRequest->destroyData([
             'column' => 'trip_request_id',
             'value' => $trip->id,
@@ -423,7 +460,7 @@ class TripRequestController extends Controller
             if ($trip->type == RIDE_REQUEST) {
                 $driverDetails->ride_count = 0;
             } else if ($request->status == 'completed' || ($trip->driver_id && $request->status == 'cancelled' && $trip->current_status == ACCEPTED)) {
-                --$driverDetails->parcel_count;
+                $driverDetails->parcel_count--;
             }
             $driverDetails->save();
 
@@ -448,10 +485,35 @@ class TripRequestController extends Controller
             $trip->current_status = RETURNING;
             $trip->return_time = Carbon::parse($request->return_time);
             $trip->save();
-            $trip->tripStatus()->update([
-                RETURNING => now()
-            ]);
-            if ($trip->cancellation_fee > 0) {
+                    $__pending_ts = $trip->created_at ?? now();
+
+        $exists = \Illuminate\Support\Facades\DB::table('trip_status')
+            ->where('trip_request_id', $trip->id)
+            ->exists();
+
+        if ($exists) {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->where('trip_request_id', $trip->id)
+                ->update([
+                    'driver_id'  => ($trip->driver_id ?? $user->id),
+                    RETURNING      => now(),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->insert([
+                    'trip_request_id' => $trip->id,
+                    'customer_id'     => $trip->customer_id ?? null,
+                    'driver_id'       => ($trip->driver_id ?? $user->id),
+
+                    'pending'         => $__pending_ts,
+                    RETURNING           => now(),
+
+                    'created_at'      => $__pending_ts,
+                    'updated_at'      => now(),
+                ]);
+        }
+if ($trip->cancellation_fee > 0) {
                 $this->driverParcelCancellationTransaction($trip);
             }
             if ($trip?->parcel?->payer === 'sender' && $trip->payment_status == PAID) {
@@ -550,8 +612,35 @@ class TripRequestController extends Controller
         ];
 
         $trip = $this->trip->update(attributes: $attributes, id: $request['trip_request_id']);
-        $trip->tripStatus()->update(['ongoing' => now()]);
-        // dd($trip);
+                $__pending_ts = $trip->created_at ?? now();
+
+        $exists = \Illuminate\Support\Facades\DB::table('trip_status')
+            ->where('trip_request_id', $trip->id)
+            ->exists();
+
+        if ($exists) {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->where('trip_request_id', $trip->id)
+                ->update([
+                    'driver_id'  => ($trip->driver_id ?? $user->id),
+                    'ongoing'      => now(),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->insert([
+                    'trip_request_id' => $trip->id,
+                    'customer_id'     => $trip->customer_id ?? null,
+                    'driver_id'       => ($trip->driver_id ?? $user->id),
+
+                    'pending'         => $__pending_ts,
+                    'ongoing'           => now(),
+
+                    'created_at'      => $__pending_ts,
+                    'updated_at'      => now(),
+                ]);
+        }
+// dd($trip);
         if ($trip->customer->fcm_token) {
             $push = getNotification('trip_started');
             sendDeviceNotification(
@@ -694,9 +783,10 @@ class TripRequestController extends Controller
 
             return response()->json(responseFormatter(constant: DEFAULT_400, errors: errorProcessor($validator)), 403);
         }
-        if (empty($request->header('zoneId'))) {
-
-            return response()->json(responseFormatter(ZONE_404));
+        $zoneId = $request->header('zoneId');
+        // DEV-FRIENDLY: allow pending rides without zone header
+        if (empty($zoneId)) {
+            $zoneId = null;
         }
         $user = auth('api')->user();
         if ($user->driverDetails->is_online != 1) {
@@ -732,7 +822,7 @@ class TripRequestController extends Controller
             'service' => $user?->driverDetails?->service ?? null,
             'parcel_weight_capacity' => $user?->vehicle?->parcel_weight_capacity ?? null,
             'distance' => $search_radius * 1000,
-            'zone_id' => $request->header('zoneId'),
+            'zone_id' => $zoneId,
             'relations' => ['driver.driverDetails', 'customer', 'ignoredRequests', 'time', 'fee', 'fare_biddings', 'parcel', 'parcelRefund'],
             'withAvgRelation' => 'customerReceivedReviews',
             'withAvgColumn' => 'rating',
@@ -942,14 +1032,39 @@ class TripRequestController extends Controller
         $trip->due_amount = 0;
         $trip->current_status = RETURNED;
         $trip->save();
-        $trip->tripStatus()->update([
-            RETURNED => now()
-        ]);
-        DB::commit();
+                $__pending_ts = $trip->created_at ?? now();
+
+        $exists = \Illuminate\Support\Facades\DB::table('trip_status')
+            ->where('trip_request_id', $trip->id)
+            ->exists();
+
+        if ($exists) {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->where('trip_request_id', $trip->id)
+                ->update([
+                    'driver_id'  => ($trip->driver_id ?? $user->id),
+                    RETURNED      => now(),
+                    'updated_at' => now(),
+                ]);
+        } else {
+            \Illuminate\Support\Facades\DB::table('trip_status')
+                ->insert([
+                    'trip_request_id' => $trip->id,
+                    'customer_id'     => $trip->customer_id ?? null,
+                    'driver_id'       => ($trip->driver_id ?? $user->id),
+
+                    'pending'         => $__pending_ts,
+                    RETURNED           => now(),
+
+                    'created_at'      => $__pending_ts,
+                    'updated_at'      => now(),
+                ]);
+        }
+DB::commit();
         $this->returnTimeExceedFeeTransaction($trip);
         //set driver availability_status as on_trip
         $driverDetails = $this->driverDetails->getBy(column: 'user_id', value: $trip->driver_id);
-        --$driverDetails->parcel_count;
+        $driverDetails->parcel_count--;
         $driverDetails->save();
         $push = getNotification('parcel_returned');
         sendDeviceNotification(fcm_token: $trip->customer->fcm_token,
@@ -1028,42 +1143,52 @@ class TripRequestController extends Controller
 
     private function getIncompleteRide()
     {
-        $trip = $this->trip->getBy(column: 'driver_id', value: auth()->guard('api')->id(), attributes: [
-            'relations' => ['tripStatus', 'customer', 'driver', 'time', 'coordinate', 'time', 'fee', 'parcelRefund'],
-            'withAvgRelation' => 'customerReceivedReviews',
-            'withAvgColumn' => 'rating', 'column_name' => 'type', 'column_value' => 'ride_request'
-        ]);
-
-        if (!$trip || $trip->fee->cancelled_by == 'driver' ||
-            (!$trip->driver_id && $trip->current_status == 'cancelled') ||
-            ($trip->driver_id && $trip->payment_status == PAID)) {
+        $driverId = auth()->guard("api")->id();
+        if (!$driverId) {
             return null;
         }
-        return $trip;
+
+        $attributes = [
+            "type" => "ride_request",
+            "column" => "driver_id",
+            "value" => $driverId,
+            "relations" => ["tripStatus","customer","driver","time","coordinate","fee","parcelRefund"],
+        ];
+
+        $tripRequest = $this->trip->getIncompleteRide($attributes);
+        if (!$tripRequest) {
+            return null;
+        }
+
+        return $this->trip->getBy(column: "id", value: $tripRequest->id, attributes: [
+            "relations" => $attributes["relations"],
+            "withAvgRelation" => "customerReceivedReviews",
+            "withAvgColumn" => "rating",
+            "column_name" => "type",
+            "column_value" => "ride_request",
+        ]);
     }
 
-    private function getIncompleteRideCustomer($id): mixed
+private function getIncompleteRideCustomer($id): mixed
     {
-        $trip = $this->trip->getBy(column: 'customer_id', value: $id, attributes: [
-            'relations' => ['fee']
-        ]);
+        $attributes = [
+            "type" => "ride_request",
+            "column" => "customer_id",
+            "value" => $id,
+            "relations" => ["fee"],
+        ];
 
-        if (!$trip || $trip->type != 'ride_request' ||
-            $trip->fee->cancelled_by == 'driver' ||
-            (!$trip->driver_id && $trip->current_status == 'cancelled') ||
-            ($trip->driver_id && $trip->payment_status == PAID)) {
-
+        $tripRequest = $this->trip->getIncompleteRide($attributes);
+        if (!$tripRequest) {
             return null;
         }
-        return $trip;
+
+        return $this->trip->getBy(column: "id", value: $tripRequest->id, attributes: [
+            "relations" => ["fee"],
+        ]);
     }
 
-
-    /**
-     * @param Request $request
-     * @return array|JsonResponse
-     */
-    public function tripOverView(Request $request)
+public function tripOverView(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'filter' => ['required', Rule::in([TODAY, THIS_WEEK, LAST_WEEK])],

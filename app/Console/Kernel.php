@@ -9,23 +9,27 @@ class Kernel extends ConsoleKernel
 {
     /**
      * Define the application's command schedule.
-     *
-     * @param Schedule $schedule
-     * @return void
      */
     protected function schedule(Schedule $schedule)
     {
-        $schedule->command('trip-request:cancel')->everyMinute();
+        // Cancel stale trips (runs every minute)
+        $schedule->command('trip-request:cancel')
+            ->everyMinute()
+            ->withoutOverlapping(2);
+
+        // Repair drift between trip_requests.current_status and trip_status timeline (runs daily at 03:00)
+        $schedule->command('trip:repair-statuses')
+            ->dailyAt('03:00')
+            ->withoutOverlapping(30)
+            ->onOneServer();
     }
 
     /**
      * Register the commands for the application.
-     *
-     * @return void
      */
     protected function commands()
     {
-        $this->load(__DIR__.'/Commands');
+        $this->load(__DIR__ . '/Commands');
 
         require base_path('routes/console.php');
     }

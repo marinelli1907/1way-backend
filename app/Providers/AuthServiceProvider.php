@@ -27,7 +27,9 @@ class AuthServiceProvider extends ServiceProvider
     public function boot()
     {
         $this->registerPolicies();
-       // Passport::routes();
+
+        Passport::enablePasswordGrant();
+        // Passport::routes();
 
         Gate::define('super-admin', fn () => auth()->user()->user_type == 'super-admin');
 

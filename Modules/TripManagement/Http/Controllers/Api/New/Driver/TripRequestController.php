@@ -2,7 +2,6 @@
 
 namespace Modules\TripManagement\Http\Controllers\Api\New\Driver;
 
-
 use Illuminate\Routing\Controller;
 use Modules\Gateways\Traits\Payment;
 use Modules\TransactionManagement\Traits\TransactionTrait;
@@ -14,7 +13,6 @@ use Modules\UserManagement\Lib\LevelHistoryManagerTrait;
 
 class TripRequestController extends Controller
 {
-
     use CommonTrait, TransactionTrait, Payment, CouponCalculationTrait, LevelHistoryManagerTrait;
 
     protected $tripRequestService;
@@ -26,20 +24,33 @@ class TripRequestController extends Controller
 
     public function currentRideStatus()
     {
-
         $relations = ['tripStatus', 'customer', 'driver', 'time', 'coordinate', 'time', 'fee', 'parcelRefund'];
-        $criteria = ['type' => 'ride_request', 'driver_id' => auth('api')->id()];
+        $baseCriteria = ['type' => 'ride_request', 'driver_id' => auth('api')->id()];
         $orderBy = ['created_at' => 'desc'];
         $withAvgRelations = [['customerReceivedReviews', 'rating']];
-        $trip = $this->tripRequestService->findOneBy(criteria: $criteria, withAvgRelations: $withAvgRelations, relations: $relations, orderBy: $orderBy);
 
-        if (!$trip || $trip->fee->cancelled_by == 'driver' ||
-            (!$trip->driver_id && $trip->current_status == 'cancelled') ||
-            ($trip->driver_id && $trip->payment_status == PAID)) {
-            return response()->json(responseFormatter(constant: DEFAULT_404), 404);
+        // Prefer the only "active" status in this system
+        $trip = $this->tripRequestService->findOneBy(
+            criteria: array_merge($baseCriteria, ['current_status' => 'picked_up']),
+            withAvgRelations: $withAvgRelations,
+            relations: $relations,
+            orderBy: $orderBy
+        );
+        if (!$trip) {
+            return response()->json(responseFormatter(constant: DEFAULT_200, content: null));
         }
-        $trip = TripRequestResource::make($trip);
-        return response()->json(responseFormatter(constant: DEFAULT_200, content: $trip));
-    }
 
+        // Hide only truly irrelevant trips
+        if (
+            ($trip->fee && $trip->fee->cancelled_by === "driver") ||
+            (!$trip->driver_id && $trip->current_status === "cancelled")
+        ) {
+            return response()->json(responseFormatter(constant: DEFAULT_200, content: null));
+        }
+
+        return response()->json(responseFormatter(
+            constant: DEFAULT_200,
+            content: TripRequestResource::make($trip)
+        ));
+    }
 }

@@ -146,22 +146,39 @@ function sendCurlRequest(string $url, string $postdata, array $header): string|b
 
 function sendNotificationToHttp(array|null $data): bool|string|null
 {
-    $key = json_decode(businessConfig('server_key')->value);
-    if (getAccessToken($key)['status']) {
-        $url = 'https://fcm.googleapis.com/v1/projects/' . $key->project_id . '/messages:send';
-        $headers = [
-            'Authorization' => 'Bearer ' . getAccessToken($key)['data'],
-            'Content-Type' => 'application/json',
-        ];
-        try {
-            return Http::withHeaders($headers)->post($url, $data);
-        } catch (\Exception $exception) {
-            return false;
-        }
-    } else {
+    $cfg = businessConfig('server_key');
+    if (!$cfg || empty($cfg->value)) {
         return false;
     }
 
+    $key = json_decode($cfg->value);
+    if (!is_object($key) || empty($key->project_id) || empty($key->client_email)) {
+        return false;
+    }
+
+    $token = getAccessToken($key);
+    if (!is_array($token) || empty($token['status'])) {
+        return false;
+    }
+
+    $url = 'https://fcm.googleapis.com/v1/projects/' . $key->project_id . '/messages:send';
+    $headers = [
+        'Authorization' => 'Bearer ' . $token['data'],
+        'Content-Type' => 'application/json',
+    ];
+
+    try {
+        return Http::withHeaders($headers)->post($url, $data);
+    } catch (\Exception $exception) {
+        return false;
+    }
+}
+
+
+
+function base64UrlEncode(string $data): string
+{
+    return rtrim(strtr(base64_encode($data), '+/', '-_'), '=');
 }
 
 function getAccessToken($key): array|string
@@ -173,13 +190,21 @@ function getAccessToken($key): array|string
         'exp' => time() + 3600,
         'iat' => time(),
     ];
-    $jwtHeader = base64_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
-    $jwtPayload = base64_encode(json_encode($jwtToken));
+    
+    if (empty($key->private_key) || empty($key->client_email)) {
+        return ['status' => false, 'data' => null];
+    }
+    $jwtHeader = base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+    $jwtPayload = base64UrlEncode(json_encode($jwtToken));
     $unsignedJwt = $jwtHeader . '.' . $jwtPayload;
-    openssl_sign($unsignedJwt, $signature, $key->private_key, OPENSSL_ALGO_SHA256);
-    $jwt = $unsignedJwt . '.' . base64_encode($signature);
 
-    $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+    $ok = openssl_sign($unsignedJwt, $signature, $key->private_key, OPENSSL_ALGO_SHA256);
+    if (!$ok) {
+        return ['status' => false, 'data' => null];
+    }
+
+    $jwt = $unsignedJwt . '.' . base64UrlEncode($signature);
+$response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
         'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
         'assertion' => $jwt,
     ]);
