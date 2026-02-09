@@ -1,0 +1,63 @@
+<?php
+
+namespace Modules\TripManagement\Lib;
+
+class TripStatusTransition
+{
+    /**
+     * These are the ONLY valid status columns in `trip_status`.
+     * We use this to prevent attempts to write to non-existent columns.
+     */
+    public static function columns(): array
+    {
+        return [
+            'pending',
+            'accepted',
+            'out_for_pickup',
+            'picked_up',
+            'ongoing',
+            'completed',
+            'cancelled',
+            'returning',
+            'returned',
+            'failed',
+        ];
+    }
+
+    public static function isValidColumn(string $status): bool
+    {
+        $status = strtolower(trim($status));
+        return in_array($status, self::columns(), true);
+    }
+
+    /**
+     * Return allowed next statuses for a given current status.
+     * Keep this strict.
+     */
+    public static function allowedNext(string $from): array
+    {
+        $from = strtolower(trim($from));
+
+        $map = [
+            'pending'        => ['accepted', 'cancelled'],
+            'accepted'       => ['out_for_pickup', 'ongoing', 'cancelled'],
+            'out_for_pickup' => ['picked_up', 'cancelled'],
+            'picked_up'      => ['ongoing', 'cancelled'],
+            'ongoing'        => ['completed', 'cancelled', 'returning'],
+            'returning'      => ['returned', 'cancelled'],
+            'returned'       => [],
+
+            'completed'      => [],
+            'cancelled'      => [],
+            'failed'         => [],
+        ];
+
+        return $map[$from] ?? [];
+    }
+
+    public static function canTransition(string $from, string $to): bool
+    {
+        $to = strtolower(trim($to));
+        return in_array($to, self::allowedNext($from), true);
+    }
+}

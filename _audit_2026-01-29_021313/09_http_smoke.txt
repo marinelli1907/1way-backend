@@ -1,0 +1,16 @@
+== HTTP SMOKE (LOCAL) ==
+APP_URL=https://api.1wayride.com
+--- https://api.1wayride.com/
+code=200 time=0.190709 url=https://api.1wayride.com/
+--- https://api.1wayride.com/admin
+code=302 time=0.155289 url=https://api.1wayride.com/admin
+--- https://api.1wayride.com/admin/auth/login
+code=200 time=0.134514 url=https://api.1wayride.com/admin/auth/login
+--- https://api.1wayride.com/api
+code=404 time=0.128226 url=https://api.1wayride.com/api
+--- https://api.1wayride.com/api/v1
+code=404 time=0.107560 url=https://api.1wayride.com/api/v1
+--- https://api.1wayride.com/api/health
+code=404 time=0.114267 url=https://api.1wayride.com/api/health
+--- https://api.1wayride.com/health
+code=404 time=0.119459 url=https://api.1wayride.com/health

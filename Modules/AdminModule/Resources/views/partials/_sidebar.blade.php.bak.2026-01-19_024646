@@ -1,0 +1,290 @@
+cd /var/www/1way-backend
+
+cp -f Modules/AdminModule/Resources/views/partials/_sidebar.blade.php \
+  Modules/AdminModule/Resources/views/partials/_sidebar.blade.php.bak.$(date +%F_%H%M%S)
+
+cat > Modules/AdminModule/Resources/views/partials/_sidebar.blade.php <<'BLADE'
+@php
+    use Illuminate\Support\Facades\Route;
+
+    $safeRoute = function ($name, $params = [], $fallback = 'javascript:void(0)') {
+        try { return Route::has($name) ? route($name, $params) : $fallback; }
+        catch (\Throwable $e) { return $fallback; }
+    };
+
+    $link  = 'oneway-nav__link';
+    $muted = 'oneway-nav__link muted';
+
+    $is = function(string $pattern) {
+        return \Illuminate\Support\Facades\Request::is($pattern);
+    };
+
+    $activeAny = function(array $patterns) use ($is) {
+        foreach ($patterns as $p) if ($is($p)) return true;
+        return false;
+    };
+@endphp
+
+<aside class="aside oneway-aside">
+    <div class="oneway-aside__head">
+        <a href="{{ $safeRoute('admin.dashboard') }}" class="oneway-brand">
+            <span class="oneway-brand__tag">OPS</span>
+        </a>
+
+        <button class="btn btn-link aside-toggle oneway-aside__toggle" type="button" aria-label="Toggle Sidebar">
+            <i class="bi bi-chevron-left"></i>
+        </button>
+    </div>
+
+    <div class="oneway-aside__nav">
+
+        {{-- 1) DASHBOARD --}}
+        <div class="oneway-nav__section">Dashboard</div>
+
+        <a class="{{ $link }} {{ $activeAny(['admin', 'admin/dashboard*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.dashboard') }}">
+            <i class="bi bi-grid"></i><span>Overview</span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-speedometer2"></i><span>Live KPIs <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-bell"></i><span>Alerts <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 2) OPERATIONS --}}
+        <div class="oneway-nav__section">Operations</div>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/heat-map*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.heat-map') }}">
+            <i class="bi bi-pin-map"></i><span>Live Demand</span>
+        </a>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/fleet-map*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.fleet-map', ['type' => 'all-driver']) }}">
+            <i class="bi bi-map"></i><span>Live Fleet</span>
+        </a>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/zone*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.zone.index') }}">
+            <i class="bi bi-geo-alt"></i><span>Zones & Coverage</span>
+        </a>
+
+        <button class="{{ $link }} oneway-nav__link--toggle {{ $activeAny(['admin/trip*']) ? 'active' : '' }}"
+                type="button" data-target="#nav-ops-trips">
+            <i class="bi bi-car-front"></i><span>Trips</span>
+            <i class="bi bi-chevron-down ms-auto"></i>
+        </button>
+        <div class="oneway-nav__sub" id="nav-ops-trips">
+            <a class="oneway-nav__sublink {{ $activeAny(['admin/trip/list/all']) ? 'active' : '' }}"
+               href="{{ $safeRoute('admin.trip.index', ['type' => 'all']) }}">All Trips</a>
+            <a class="oneway-nav__sublink {{ $activeAny(['admin/trip/list/pending']) ? 'active' : '' }}"
+               href="{{ $safeRoute('admin.trip.index', ['type' => 'pending']) }}">Trip Requests</a>
+            <a class="oneway-nav__sublink {{ $activeAny(['admin/trip/list/scheduled']) ? 'active' : '' }}"
+               href="{{ $safeRoute('admin.trip.index', ['type' => 'scheduled']) }}">Scheduled Rides</a>
+            <a class="oneway-nav__sublink {{ $activeAny(['admin/trip/list/ongoing']) ? 'active' : '' }}"
+               href="{{ $safeRoute('admin.trip.index', ['type' => 'ongoing']) }}">Active</a>
+            <a class="oneway-nav__sublink {{ $activeAny(['admin/trip/list/completed']) ? 'active' : '' }}"
+               href="{{ $safeRoute('admin.trip.index', ['type' => 'completed']) }}">Completed</a>
+        </div>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-headset"></i><span>Support Inbox <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 3) CALENDAR & EVENTS --}}
+        <div class="oneway-nav__section">Calendar & Events</div>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-calendar3"></i><span>Calendar (Admin View) <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-list-ul"></i><span>Events List <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-plus-circle"></i><span>Create / Manage Events <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-people"></i><span>Event Ride Planner <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-geo"></i><span>Venues / Locations <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-graph-up"></i><span>Event Analytics <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 4) PROMOTIONS & PARTNERS --}}
+        <div class="oneway-nav__section">Promotions & Partners</div>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-shop"></i><span>Businesses <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/promotion*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.promotion.banner-setup.index') }}">
+            <i class="bi bi-megaphone"></i><span>Ad Campaigns</span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-ticket-perforated"></i><span>Ride Incentives <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-bar-chart"></i><span>Promo Performance <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 5) USERS --}}
+        <div class="oneway-nav__section">Users</div>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-person"></i><span>Customers <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/driver*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.driver.index') }}">
+            <i class="bi bi-person-badge"></i><span>Drivers</span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-person-gear"></i><span>Admin Users / Staff <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-shield-lock"></i><span>Roles & Permissions <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 6) DRIVER OPS --}}
+        <div class="oneway-nav__section">Driver Ops</div>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-person-check"></i><span>Applications / Onboarding <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-file-earmark-text"></i><span>Driver Documents <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-percent"></i><span>Driver Payout Splits <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-wifi"></i><span>Availability / Online Status <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 7) PAYMENTS & FINANCE --}}
+        <div class="oneway-nav__section">Payments & Finance</div>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/transaction*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.transaction.index') }}">
+            <i class="bi bi-receipt"></i><span>Transactions</span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-bank"></i><span>Withdrawals <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-arrow-counterclockwise"></i><span>Refunds / Chargebacks <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/report*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.report.earning') }}">
+            <i class="bi bi-graph-up"></i><span>Revenue Reports</span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 8) BUSINESS CENTER --}}
+        <div class="oneway-nav__section">Business Center</div>
+
+        <a class="{{ $link }} {{ $activeAny(['admin/fare*']) ? 'active' : '' }}"
+           href="{{ $safeRoute('admin.fare.trip.index') }}">
+            <i class="bi bi-cash-coin"></i><span>Pricing Rules</span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-receipt-cutoff"></i><span>Taxes & Fees <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-file-earmark-ruled"></i><span>Invoices <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-box-seam"></i><span>Subscriptions / Plans <small>(Coming Soon)</small></span>
+        </a>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-shield-check"></i><span>Audit Logs <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 9) AI CENTER --}}
+        <div class="oneway-nav__section">AI Center</div>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-robot"></i><span>Ops Copilot <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-exclamation-triangle"></i><span>Fraud / Risk Alerts <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-lightbulb"></i><span>Smart Pricing <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-diagram-3"></i><span>Supply Predictions <small>(Coming Soon)</small></span>
+        </a>
+
+        <div class="oneway-nav__divider"></div>
+
+        {{-- 10) SYSTEM --}}
+        <div class="oneway-nav__section">System</div>
+
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-plug"></i><span>Integrations <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-key"></i><span>API Keys <small>(Coming Soon)</small></span>
+        </a>
+        <a class="{{ $muted }}" href="javascript:void(0)">
+            <i class="bi bi-tools"></i><span>Maintenance Mode <small>(Coming Soon)</small></span>
+        </a>
+
+    </div>
+</aside>
+
+@push('script')
+<script>
+(function () {
+    document.querySelectorAll('.oneway-nav__link--toggle').forEach(function(toggle){
+        const targetSel = toggle.getAttribute('data-target');
+        const sub = targetSel ? document.querySelector(targetSel) : null;
+        if (!sub) return;
+
+        // keep open if current section is active
+        const isActive = toggle.classList.contains('active');
+        sub.style.display = isActive ? 'block' : 'none';
+
+        toggle.addEventListener('click', function () {
+            const open = sub.style.display === 'block';
+            sub.style.display = open ? 'none' : 'block';
+        });
+    });
+})();
+</script>
+@endpush
+BLADE

@@ -1,0 +1,71 @@
+<?php
+
+namespace Modules\TripManagement\Entities;
+
+use App\Traits\HasUuid;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Modules\UserManagement\Entities\User;
+
+class TripStatus extends Model
+{
+    
+    protected static function booted(): void
+    {
+        static::saving(function ($model) {
+            try {
+                if (empty($model->driver_id) && !empty($model->trip_request_id)) {
+                    $driverId = \Illuminate\Support\Facades\DB::table('trip_requests')
+                        ->where('id', $model->trip_request_id)
+                        ->value('driver_id');
+                    if (!empty($driverId)) {
+                        $model->driver_id = $driverId;
+                    }
+                }
+            } catch (\Throwable $e) {
+                // swallow: never block status updates due to safety-net failure
+            }
+        });
+    }
+
+use HasFactory;
+
+    protected $fillable = [
+        'trip_request_id',
+        'customer_id',
+        'driver_id',
+        'pending',
+        'accepted',
+        'out_for_pickup',
+        'picked_up',
+        'ongoing',
+        'completed',
+        'cancelled',
+        'returning',
+        'returned',
+        'failed',
+        'note',
+        'created_at',
+        'updated_at',
+    ];
+    protected $table = 'trip_status';
+
+    protected static function newFactory()
+    {
+        return \Modules\TripManagement\Database\factories\TripStatusFactory::new();
+    }
+
+    public function tripRequest()
+    {
+        return $this->belongsTo(TripRequest::class);
+    }
+    public function customer()
+    {
+        return $this->belongsTo(User::class, 'customer_id');
+    }
+
+    public function driver()
+    {
+        return $this->belongsTo(User::class, 'customer_id');
+    }
+}

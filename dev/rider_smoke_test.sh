@@ -1,0 +1,93 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE_URL="${BASE_URL:-https://api.1wayride.com}"
+
+# test rider creds
+RIDER_LOGIN="${RIDER_LOGIN:-15555550123}"      # phone OR email
+RIDER_PASSWORD="${RIDER_PASSWORD:-password}"
+
+# cancel the created ride by default (set RIDER_CANCEL=0 to keep it open)
+RIDER_CANCEL="${RIDER_CANCEL:-1}"
+
+echo "== Rider Smoke Test =="
+echo "BASE_URL=$BASE_URL"
+echo "RIDER_LOGIN=$RIDER_LOGIN"
+echo "RIDER_CANCEL=$RIDER_CANCEL"
+
+echo "1) Logging in..."
+LOGIN_JSON=$(curl -sS -X POST "$BASE_URL/api/customer/auth/login" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/x-www-form-urlencoded" \
+  --data-urlencode "phone_or_email=$RIDER_LOGIN" \
+  --data-urlencode "password=$RIDER_PASSWORD")
+
+TOKEN=$(echo "$LOGIN_JSON" | php -r '
+$j=json_decode(stream_get_contents(STDIN),true);
+echo $j["data"]["token"] ?? "";
+')
+
+if [ -z "${TOKEN:-}" ]; then
+  echo "❌ Login failed"
+  echo "$LOGIN_JSON"
+  exit 1
+fi
+echo "✅ Login OK"
+
+echo "2) Creating ride..."
+CREATE_JSON=$(curl -sS -X POST "$BASE_URL/api/customer/ride/create" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{
+    "bid": 0,
+    "zone_id": 2,
+    "vehicle_category_id": "80787aa9-10b4-4af5-81a8-6c79a8acf154",
+    "pickup_latitude": 41.4993,
+    "pickup_longitude": -81.6944,
+    "destination_latitude": 41.5000,
+    "destination_longitude": -81.7000,
+    "type": "ride_request",
+    "estimated_fare": 10,
+    "payment_method": "cash"
+  }')
+
+TRIP_ID=$(echo "$CREATE_JSON" | php -r '
+$j=json_decode(stream_get_contents(STDIN),true);
+echo $j["data"]["id"] ?? "";
+')
+
+if [ -z "${TRIP_ID:-}" ]; then
+  echo "❌ Ride creation failed"
+  echo "$CREATE_JSON"
+  exit 1
+fi
+
+echo "✅ Ride created: $TRIP_ID"
+
+if [[ "$RIDER_CANCEL" == "1" ]]; then
+  echo "3) Cancelling ride..."
+  CANCEL_JSON=$(curl -sS -X PUT "$BASE_URL/api/customer/ride/update-status/$TRIP_ID" \
+    -H "Accept: application/json" \
+    -H "Content-Type: application/json" \
+    -H "Authorization: Bearer $TOKEN" \
+    -d '{
+      "status": "cancelled",
+      "cancel_reason": "smoke test"
+    }')
+
+  echo "$CANCEL_JSON" | php -r '
+$j=json_decode(stream_get_contents(STDIN),true);
+if (!is_array($j) || !isset($j["response_code"])) {
+  echo "❌ Cancel failed\n";
+  var_dump($j);
+  exit(1);
+}
+echo "✅ Cancel response OK\n";
+'
+else
+  echo "3) Cancelling ride... (skipped)"
+fi
+
+echo ""
+echo "🎉 RIDER SMOKE TEST PASSED"

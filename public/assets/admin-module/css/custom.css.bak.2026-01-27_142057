@@ -1,0 +1,100 @@
+/* =========================================================
+   1Way Admin Theme Override (Loaded after style.css)
+   Goal: remove Drivemond green + standardize to 1Way navy/red
+   ========================================================= */
+
+:root{
+  --oneway-navy: #0b1f3a;
+  --oneway-navy-2: #123a66;
+  --oneway-red: #e11d2e;
+  --oneway-red-2: #b91c1c;
+  --oneway-bg: #f6f8fc;
+  --oneway-card: #ffffff;
+  --oneway-border: rgba(11,31,58,.12);
+  --oneway-shadow: 0 10px 28px rgba(11,31,58,.10);
+
+  /* Bootstrap vars */
+  --bs-primary: var(--oneway-navy);
+  --bs-danger: var(--oneway-red);
+
+  /* Hard kill success green by mapping it to navy */
+  --bs-success: var(--oneway-navy);
+  --bs-success-rgb: 11,31,58;
+
+  --bs-info: var(--oneway-navy-2);
+  --bs-link-color: var(--oneway-navy);
+  --bs-link-hover-color: var(--oneway-navy-2);
+}
+
+body{ background: var(--oneway-bg) !important; }
+
+/* Cards / panels */
+.card, .custom-card, .box, .content-card{
+  border-color: var(--oneway-border) !important;
+  box-shadow: var(--oneway-shadow) !important;
+  border-radius: 16px !important;
+}
+
+/* Primary buttons */
+.btn-primary,
+.btn-success{
+  background: var(--oneway-navy) !important;
+  border-color: var(--oneway-navy) !important;
+  color: #fff !important;
+}
+.btn-primary:hover,
+.btn-success:hover{
+  background: var(--oneway-navy-2) !important;
+  border-color: var(--oneway-navy-2) !important;
+}
+
+/* Danger buttons */
+.btn-danger{
+  background: var(--oneway-red) !important;
+  border-color: var(--oneway-red) !important;
+  color: #fff !important;
+}
+.btn-danger:hover{
+  background: var(--oneway-red-2) !important;
+  border-color: var(--oneway-red-2) !important;
+}
+
+/* Outline buttons: unify (no green outlines) */
+.btn-outline-primary,
+.btn-outline-success,
+.btn-outline-info{
+  color: var(--oneway-navy) !important;
+  border-color: rgba(11,31,58,.35) !important;
+}
+.btn-outline-primary:hover,
+.btn-outline-success:hover,
+.btn-outline-info:hover{
+  background: var(--oneway-navy) !important;
+  border-color: var(--oneway-navy) !important;
+  color: #fff !important;
+}
+
+/* Badges/pills that show green */
+.badge.bg-success,
+.bg-success{
+  background: var(--oneway-navy) !important;
+}
+.text-success{
+  color: var(--oneway-navy) !important;
+}
+
+/* Switches/toggles (commonly green) */
+input[type="checkbox"]:checked + .slider,
+.switcher_input:checked + .switcher_control{
+  background: var(--oneway-navy) !important;
+  border-color: var(--oneway-navy) !important;
+}
+
+/* Links */
+a{ color: var(--oneway-navy); }
+a:hover{ color: var(--oneway-navy-2); }
+
+/* Tables */
+.table thead th{
+  color: var(--oneway-navy) !important;
+}

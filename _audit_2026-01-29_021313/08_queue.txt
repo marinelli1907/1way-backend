@@ -1,0 +1,9 @@
+== QUEUE/SUPERVISOR ==
+
+                                             
+  Not enough arguments (missing: "queues").  
+                                             
+
+root     1103280  0.0  0.3  38820 28788 ?        Ss   Jan24   1:01 /usr/bin/python3 /usr/bin/supervisord -n -c /etc/supervisor/supervisord.conf
+www-data 1103333  0.0  0.8 133100 65620 ?        S    Jan24   0:40 php /var/www/admin.1wayride.com/artisan queue:work --sleep=3 --tries=3
+laravel-worker:laravel-worker_00   RUNNING   pid 1103333, uptime 4 days, 20:04:53

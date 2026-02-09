@@ -1,0 +1,56 @@
+<?php
+
+namespace Modules\TripManagement\Lib;
+
+class TripStatusTransition
+{
+    public static function columns(): array
+    {
+        return [
+            'pending',
+            'accepted',
+            'out_for_pickup',
+            'picked_up',
+            'ongoing',
+            'completed',
+            'cancelled',
+            'returning',
+            'returned',
+            'failed',
+        ];
+    }
+
+    public static function isValidColumn(string ): bool
+    {
+         = strtolower(trim());
+        return in_array(, self::columns(), true);
+    }
+
+
+    public static function allowedNext(string $from): array
+    {
+        $from = strtolower(trim($from));
+
+        $map = [
+            'pending'        => ['accepted', 'cancelled'],
+            'accepted'       => ['out_for_pickup', 'ongoing', 'cancelled'],
+            'out_for_pickup' => ['picked_up', 'cancelled'],
+            'picked_up'      => ['ongoing', 'cancelled'],
+            'ongoing'        => ['completed', 'cancelled', 'returning'],
+            'returning'      => ['returned', 'cancelled'],
+            'returned'       => [],
+
+            'completed'      => [],
+            'cancelled'      => [],
+            'failed'         => [],
+        ];
+
+        return $map[$from] ?? [];
+    }
+
+    public static function canTransition(string $from, string $to): bool
+    {
+        $to = strtolower(trim($to));
+        return in_array($to, self::allowedNext($from), true);
+    }
+}

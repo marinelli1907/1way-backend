@@ -1,0 +1,9 @@
+== STORAGE/LOGS ==
+total 488K
+drwxrwxr-x 2 www-data www-data 4.0K Jan 28 01:26 .
+drwxrwxr-x 6 www-data www-data 4.0K Jan 19 17:39 ..
+-rwxr-xr-x 1 root     root       14 Jan 19 00:00 .gitignore
+-rw-rw-r-- 1 www-data www-data 117K Jan 29 02:13 laravel.log
+-rw-rw-r-- 1 www-data www-data 8.1K Jan 19 00:20 laravel.log.bak.2026-01-19_011801
+-rw-rw-r-- 1 www-data www-data 316K Jan 21 04:00 laravel.log.bak.2026-01-21_041559
+-rw-r--r-- 1 root     root      664 Jan 28 02:19 trip-repair.log

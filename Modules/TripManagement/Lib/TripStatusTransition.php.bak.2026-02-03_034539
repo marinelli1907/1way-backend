@@ -1,0 +1,68 @@
+<?php
+
+namespace Modules\TripManagement\Lib;
+
+class TripStatusTransition
+{
+    /**
+     * Columns/statuses that exist in trip_request_status (or equivalent) row.
+     * These match the common schema: pending/accepted/ongoing/completed/cancelled/returning/returned.
+     */
+    public static function columns(): array
+    {
+        return [
+            'pending',
+            'accepted',
+            'ongoing',
+            'completed',
+            'cancelled',
+            'returning',
+            'returned',
+        ];
+    }
+
+    public static function isValidColumn($to): bool
+    {
+        $to = self::norm($to);
+        return in_array($to, self::columns(), true);
+    }
+
+    public static function canTransition($from, $to): bool
+    {
+        $from = self::norm($from);
+        $to   = self::norm($to);
+
+        // Defensive: don't block on unknowns during dev
+        if ($from === '' || $to === '') return true;
+
+        // Same -> ok (idempotent)
+        if ($from === $to) return true;
+
+        $map = self::allowedMap();
+
+        // If we don't recognize the current state, don't hard-fail.
+        if (!isset($map[$from])) return true;
+
+        return in_array($to, $map[$from], true);
+    }
+
+    protected static function norm($v): string
+    {
+        if ($v === null) return '';
+        $v = is_string($v) ? $v : (string) $v;
+        return strtolower(trim($v));
+    }
+
+    protected static function allowedMap(): array
+    {
+        return [
+            'pending'   => ['accepted', 'cancelled'],
+            'accepted'  => ['ongoing', 'cancelled'],
+            'ongoing'   => ['completed', 'cancelled', 'returning'],
+            'returning' => ['returned', 'cancelled'],
+            'returned'  => [],
+            'completed' => [],
+            'cancelled' => [],
+        ];
+    }
+}

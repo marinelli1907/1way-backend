@@ -1,0 +1,183 @@
+/* =========================
+   1Way Admin Skin (Overlay)
+   - Blue navy
+   - No mint/green accents
+   - Sidebar scroll
+   ========================= */
+
+:root{
+  --oneway-blue:#1f4aa8;         /* lighter "navy" -> real blue */
+  --oneway-blue-2:#2a63d4;
+  --oneway-red:#e11d2e;
+  --oneway-white:#ffffff;
+  --oneway-ink:#0b1220;
+  --oneway-bg:#f5f7fb;
+  --oneway-muted:#6b7280;
+  --oneway-border:rgba(11,18,32,.10);
+  --oneway-shadow:0 14px 40px rgba(11,18,32,.08);
+  --oneway-shadow-2:0 8px 20px rgba(11,18,32,.08);
+  --oneway-radius:16px;
+  --oneway-radius-sm:12px;
+
+  /* Kill mint/green */
+  --oneway-success:#0f172a; /* map "success" to dark slate/blue tone */
+}
+
+body{
+  background:var(--oneway-bg) !important;
+  color:var(--oneway-ink);
+}
+
+/* ===== Bootstrap-ish overrides (remove mint, push to blue/red) ===== */
+.btn-primary,
+.bg-primary{
+  background: var(--oneway-blue) !important;
+  border-color: rgba(31,74,168,.55) !important;
+}
+.btn-primary:hover,
+.btn-primary:focus{
+  background: var(--oneway-blue-2) !important;
+  border-color: rgba(42,99,212,.55) !important;
+}
+.btn-success,
+.bg-success,
+.badge.bg-success,
+.text-success{
+  background: var(--oneway-blue) !important;
+  border-color: rgba(31,74,168,.55) !important;
+  color:#fff !important;
+}
+.btn-success:hover{
+  background: var(--oneway-blue-2) !important;
+}
+a{
+  color: var(--oneway-blue) !important;
+}
+a:hover{
+  color: var(--oneway-blue-2) !important;
+}
+
+/* Floating settings / quick action buttons commonly use success/green */
+.floating-button,
+.settings-floating-btn,
+.btn-floating,
+.quick-actions .btn,
+.btn-outline-success{
+  background: var(--oneway-blue) !important;
+  border-color: rgba(31,74,168,.55) !important;
+  color:#fff !important;
+}
+.btn-outline-success:hover{
+  background: var(--oneway-blue-2) !important;
+  color:#fff !important;
+}
+
+/* Remove green hover glow */
+.btn:hover,
+.nav-link:hover,
+.dropdown-item:hover{
+  box-shadow: none !important;
+}
+
+/* ===== Sidebar: force scroll =====
+   We target multiple common class names so it works even if markup differs.
+*/
+aside,
+.aside,
+.sidebar,
+.main-sidebar,
+.aside-bar{
+  background:#fff !important;
+  border-right:1px solid var(--oneway-border) !important;
+}
+
+/* Make the actual scrolling happen */
+aside,
+.aside,
+.sidebar,
+.main-sidebar,
+.aside-bar{
+  height: 100vh !important;
+  overflow: hidden !important; /* wrapper hidden, inner scroll */
+}
+
+/* inner containers that usually hold menu */
+.aside .aside-body,
+.aside .aside-nav,
+.sidebar .sidebar-body,
+.sidebar .sidebar-menu,
+.main-sidebar .sidebar,
+.main-sidebar .sidebar-wrapper,
+#sidebar,
+#aside,
+.sidebar-scroll,
+.scrollable-sidebar{
+  height: calc(100vh - 72px) !important; /* leaves room for header area */
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 18px;
+}
+
+/* Optional: nicer scrollbar */
+.aside .aside-body::-webkit-scrollbar,
+.sidebar .sidebar-body::-webkit-scrollbar,
+#sidebar::-webkit-scrollbar{
+  width: 10px;
+}
+.aside .aside-body::-webkit-scrollbar-thumb,
+.sidebar .sidebar-body::-webkit-scrollbar-thumb,
+#sidebar::-webkit-scrollbar-thumb{
+  background: rgba(11,18,32,.18);
+  border-radius: 999px;
+}
+
+/* ===== Cards/panels: 1Way feel ===== */
+.card,
+.box,
+.panel,
+.content-card{
+  border: 1px solid var(--oneway-border) !important;
+  border-radius: var(--oneway-radius) !important;
+  box-shadow: var(--oneway-shadow-2) !important;
+}
+
+/* ===== Nav active style: red accent, blue text ===== */
+.nav .active,
+.sidebar .active,
+.aside .active{
+  background: rgba(225,29,46,.10) !important;
+  border-color: rgba(225,29,46,.22) !important;
+  color: var(--oneway-ink) !important;
+}
+
+/* ===== Form controls ===== */
+.form-control,
+.form-select,
+.select2-container--default .select2-selection--single{
+  border-radius: 12px !important;
+  border: 1px solid rgba(11,18,32,.14) !important;
+}
+.form-control:focus,
+.form-select:focus{
+  border-color: rgba(31,74,168,.45) !important;
+  box-shadow: 0 0 0 4px rgba(31,74,168,.10) !important;
+}
+
+/* ===== Remove any mint-ish highlights from toggles/switches ===== */
+input[type="checkbox"]:checked,
+input[type="radio"]:checked{
+  accent-color: var(--oneway-blue) !important;
+}
+
+/* If your theme uses CSS variables for primary */
+:root,
+[theme]{
+  --bs-primary: var(--oneway-blue);
+  --bs-success: var(--oneway-blue);
+}
+
+/* Make sure charts/tooltips aren't green themed */
+.apexcharts-tooltip{
+  border-color: var(--oneway-border) !important;
+}

@@ -1,0 +1,52 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+BASE="${BASE:-https://api.1wayride.com}"
+
+LOGIN="${LOGIN:-15555550123}"
+PASS="${PASS:-Test1234!}"
+
+PICKUP_LAT="${PICKUP_LAT:-41.4993}"
+PICKUP_LNG="${PICKUP_LNG:--81.6944}"
+DEST_LAT="${DEST_LAT:-41.5050}"
+DEST_LNG="${DEST_LNG:--81.6900}"
+
+ZONE_ID="${ZONE_ID:-2}"
+
+BID="${BID:-5}"
+TYPE="${TYPE:-ride_request}"
+
+echo "== Customer login =="
+TOKEN="$(curl -sS -X POST "$BASE/api/customer/auth/login" \
+  -H "Accept: application/json" \
+  --data-urlencode "phone_or_email=$LOGIN" \
+  --data-urlencode "password=$PASS" | jq -r '.data.token')"
+
+if [[ -z "$TOKEN" || "$TOKEN" == "null" ]]; then
+  echo "CUSTOMER LOGIN FAILED:"
+  curl -sS -X POST "$BASE/api/customer/auth/login" \
+    -H "Accept: application/json" \
+    --data-urlencode "phone_or_email=$LOGIN" \
+    --data-urlencode "password=$PASS" | jq .
+  exit 1
+fi
+
+HDRS=(-H "Authorization: Bearer $TOKEN" -H "Accept: application/json")
+if [[ -n "$ZONE_ID" ]]; then
+  HDRS+=(-H "zoneId: $ZONE_ID")
+fi
+
+echo "== Probe: customer ride/create =="
+OUT="$(curl -sS -X POST "$BASE/api/customer/ride/create" \
+  "${HDRS[@]}" \
+  --data-urlencode "pickup_latitude=$PICKUP_LAT" \
+  --data-urlencode "pickup_longitude=$PICKUP_LNG" \
+  --data-urlencode "destination_latitude=$DEST_LAT" \
+  --data-urlencode "destination_longitude=$DEST_LNG" \
+  --data-urlencode "bid=$BID" \
+  --data-urlencode "type=$TYPE" \
+  --data-urlencode "zone_id=$ZONE_ID" \
+)"
+
+echo "$OUT" | jq .
+echo "== If this returned default_400: paste the .errors array here =="

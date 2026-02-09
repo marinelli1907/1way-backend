@@ -825,11 +825,12 @@ if (!empty($driver_for_status) && empty($trip->driver_id)) {
                     ->whereHas('fee', function ($query) {
                         $query->where('cancelled_by', '!=', 'driver');
                     })
-                    ->whereIn('current_status', ['completed', 'cancelled'])
+                    ->whereIn('current_status', ['completed'])
                     ->where('payment_status', 'unpaid')
                 ))
             ->when(($attributes['type'] ?? null), fn($query) => $query->where('type', $attributes['type']))
             ->where($attributes['column'], $attributes['value'])
+            ->orderBy('created_at', 'desc')
             ->first();
     }
 

@@ -1,0 +1,28 @@
+== TRIP STATUS INTEGRITY QUICK CHECK ==
+"latest_trip_requests" // vendor/psy/psysh/src/ExecutionClosure.php(41) : eval()'d code:3
+{#7437
+  +"id": "c5be767b-106f-41b4-ba47-45ffcd566301"
+  +"current_status": "picked_up"
+  +"driver_id": "3d22946c-4e30-4cb7-a51f-a30f839d1239"
+  +"updated_at": "2026-01-28 22:41:38"
+} // vendor/psy/psysh/src/ExecutionClosure.php(41) : eval()'d code:3
+"matching_trip_status" // vendor/psy/psysh/src/ExecutionClosure.php(41) : eval()'d code:6
+{#7588
+  +"id": 15
+  +"trip_request_id": "c5be767b-106f-41b4-ba47-45ffcd566301"
+  +"customer_id": "e00dfe7c-8e11-4b70-829b-c4633bb17122"
+  +"driver_id": "3d22946c-4e30-4cb7-a51f-a30f839d1239"
+  +"pending": "2026-01-20 02:45:10"
+  +"accepted": "2026-01-28 21:58:42"
+  +"out_for_pickup": "2026-01-28 22:41:38"
+  +"picked_up": "2026-01-28 22:41:38"
+  +"ongoing": null
+  +"completed": null
+  +"cancelled": null
+  +"failed": null
+  +"note": null
+  +"created_at": "2026-01-20 02:45:10"
+  +"updated_at": "2026-01-28 22:41:38"
+  +"returning": null
+  +"returned": null
+} // vendor/psy/psysh/src/ExecutionClosure.php(41) : eval()'d code:6
