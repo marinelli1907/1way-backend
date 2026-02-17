@@ -110,7 +110,7 @@ class TripRequestRepository extends BaseRepository implements TripRequestReposit
             return false;
         }
 
-        $trip = $this->findOne(id: $tripId);
+        $trip = $this->findOne(id: $attributes['value']);
 
         if ($attributes['trip_status'] ?? null) {
             $tripData['current_status'] = $attributes['trip_status'];

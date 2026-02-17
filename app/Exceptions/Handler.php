@@ -31,32 +31,65 @@ class Handler extends ExceptionHandler
 
     /**
      * Register the exception handling callbacks for the application.
-     *
-     * @return void
      */
-    public function register()
+    public function register(): void
     {
         $this->reportable(function (Throwable $e) {
-            //
+            // You can add logging/reporting here if needed.
         });
 
+        // JSON 404 response
         $this->renderable(function (NotFoundHttpException $e, $request) {
-            if ($request->wantsJson()) {
-                abort(response()->json(responseFormatter(DEFAULT_404), 404));
+            if ($request->expectsJson()) {
+                return response()->json(
+                    function_exists('responseFormatter')
+                        ? responseFormatter(DEFAULT_404)
+                        : [
+                            'response_code' => 404,
+                            'message' => 'Not Found',
+                            'content' => null,
+                            'errors' => [],
+                        ],
+                    404
+                );
             }
+
+            return null; // let Laravel handle non-JSON
         });
 
+        // JSON response for other HttpExceptions (401/403/405/419/429/500, etc.)
         $this->renderable(function (HttpException $e, $request) {
-            if ($request->wantsJson()) {
-                abort(response()->json([
-                    'response_code' => $e->getStatusCode(),
-                    'message' => $e->getMessage(),
-                    'content' => null,
-                    'errors' => [
+            if ($request->expectsJson()) {
+                $status = $e->getStatusCode();
 
-                    ]
-                ], $e->getStatusCode()));
+                return response()->json([
+                    'response_code' => $status,
+                    'message' => $e->getMessage() ?: $this->defaultHttpMessage($status),
+                    'content' => null,
+                    'errors' => [],
+                ], $status);
             }
+
+            return null; // let Laravel handle non-JSON
         });
+    }
+
+    /**
+     * Fallback messages when HttpException has an empty message.
+     */
+    private function defaultHttpMessage(int $status): string
+    {
+        return match ($status) {
+            400 => 'Bad Request',
+            401 => 'Unauthorized',
+            403 => 'Forbidden',
+            404 => 'Not Found',
+            405 => 'Method Not Allowed',
+            419 => 'Page Expired',
+            422 => 'Unprocessable Entity',
+            429 => 'Too Many Requests',
+            500 => 'Server Error',
+            default => 'Error',
+        };
     }
 }

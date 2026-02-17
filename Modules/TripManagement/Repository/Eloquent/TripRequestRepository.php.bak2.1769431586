@@ -101,16 +101,7 @@ class TripRequestRepository extends BaseRepository implements TripRequestReposit
 
     public function updateRelationalTable($attributes): mixed
     {
-        $raw = $attributes["value"] ?? null;
-        // Accept either scalar UUID or ["value" => UUID]
-        $tripId = is_array($raw) ? ($raw["value"] ?? null) : $raw;
-
-        if (empty($tripId)) {
-            // Nothing to update; prevents findOne(null) crashes
-            return false;
-        }
-
-        $trip = $this->findOne(id: $tripId);
+        $trip = $this->findOne(id: $attributes['value']);
 
         if ($attributes['trip_status'] ?? null) {
             $tripData['current_status'] = $attributes['trip_status'];

@@ -1,58 +1,75 @@
 <?php
 
-use App\CentralLogics\Helpers;
+use Brian2694\Toastr\Facades\Toastr;
 use Carbon\Carbon;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Contracts\Translation\Translator;
-use Illuminate\Support\Facades\Broadcast;
+use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Exceptions\HttpResponseException;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Redirect;
 use Illuminate\Support\Str;
 use Modules\BusinessManagement\Entities\ExternalConfiguration;
 use Modules\BusinessManagement\Entities\ReferralEarningSetting;
+use Modules\Gateways\Entities\Setting;
 use Modules\UserManagement\Entities\User;
-use Pusher\Pusher;
-use Pusher\PusherException;
 use Rap2hpoutre\FastExcel\FastExcel;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use Modules\BusinessManagement\Entities\BusinessSetting;
-use Modules\AdminModule\Repositories\ActivityLogRepository;
 use Modules\BusinessManagement\Entities\FirebasePushNotification;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 if (!function_exists('translate')) {
-    function translate($key, $replace = []): array|string|Translator|null
+    function translate(string $key, array $replace = [], ?string $locale = null): string
     {
-        $local = app()->getLocale();
+        $locale = $locale ?? app()->getLocale();
+        $normalizedKey = removeSpecialCharacters($key);
+
         try {
-            $langArray = include(base_path('resources/lang/' . $local . '/lang.php'));
-            $processedKey = ucfirst(str_replace('_', ' ', removeSpecialCharacters($key)));
-            $key = removeSpecialCharacters($key);
-            if (!array_key_exists($key, $langArray)) {
-                $langArray[$key] = $processedKey;
-                $str = "<?php return " . var_export($langArray, true) . ";";
-                file_put_contents(base_path('resources/lang/' . $local . '/lang.php'), $str);
-                $result = $processedKey;
-            } else {
-                $result = trans('lang.' . $key);
+            $langFilePath = base_path("resources/lang/$locale/lang.php");
+            $translations = include $langFilePath;
+
+            $defaultValue = ucfirst(str_replace('_', ' ', $normalizedKey));
+            $translatedValue = str_replace(['{', '}'], [':', ''], $defaultValue);
+
+            if (!array_key_exists($normalizedKey, $translations)) {
+                $translations[$normalizedKey] = $locale === 'en'
+                    ? $translatedValue
+                    : autoTranslator(q: $defaultValue, sl: 'en', tl: $locale);
+
+                $exported = "<?php return " . var_export($translations, true) . ";";
+                file_put_contents($langFilePath, $exported);
+                $translation = $translations[$normalizedKey];
+                foreach ($replace as $k => $v) {
+                    $translation = str_replace(":$k", $v, $translation);
+                }
+                return (string) $translation;
             }
-        } catch (\Exception $exception) {
-            $result = trans('lang.' . $key);
+
+            return (string) trans("lang.$normalizedKey", $replace, $locale);
+        } catch (Exception) {
+            return (string) trans("lang.$normalizedKey", $replace, $locale);
         }
-        return $result;
     }
 }
 if (!function_exists('defaultLang')) {
-    function defaultLang()
+    function defaultLang(): string
     {
         if (strpos(url()->current(), '/api')) {
             $lang = App::getLocale();
         } elseif (session()->has('locale')) {
             $lang = session('locale');
         } elseif (businessConfig('system_language', 'language_settings')) {
-            $data = businessConfig('system_language', 'language_settings')->value;
+            $data = businessConfig('system_language', 'language_settings')?->value;
             $code = 'en';
             $direction = 'ltr';
             foreach ($data as $ln) {
@@ -72,43 +89,142 @@ if (!function_exists('defaultLang')) {
         return $lang;
     }
 }
-
-
 if (!function_exists('removeSpecialCharacters')) {
-    function removeSpecialCharacters(string|null $text): string|null
+    function removeSpecialCharacters(string|null $text): ?string
     {
-        return str_ireplace(['\'', '"', ',', ';', '<', '>', '?'], ' ', preg_replace('/\s\s+/', ' ', $text));
+        return str_ireplace(['\'', '"', ';', '<', '>', '?'], ' ', preg_replace('/\s\s+/', ' ', $text));
     }
 }
-
 if (!function_exists('fileUploader')) {
-    function fileUploader(string $dir, string $format, $image = null, $oldImage = null)
+    function fileUploader(string $dir, string $format= APPLICATION_IMAGE_FORMAT, ?UploadedFile $image = null, $oldImage = null): string|false
     {
         if ($image == null) {
-            return $oldImage ?? 'def.png';
-        }
-        if (is_array($oldImage) && !empty($oldImage)) {
-            // Handle the case when $oldImage is an array (multiple images)
-            foreach ($oldImage as $file) {
-                Storage::disk('public')->delete($dir . $file);
-            }
-        } elseif (is_string($oldImage) && !empty($oldImage)) {
-            // Handle the case when $oldImage is a single image (string)
-            Storage::disk('public')->delete($dir . $oldImage);
+            return 'def.png';
         }
 
-        $imageName = Carbon::now()->toDateString() . "-" . uniqid() . "." . $format;
+        set_time_limit(300);
+        $dir = rtrim($dir, '/') . '/';
+
+        if(in_array($format, ['txt', 'rtf', 'doc', 'docx', 'pdf', 'odt', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'log', 'zip', 'mp4', 'mkv', 'avi', 'mov', 'webm']))
+        {
+            $fileName = date('Y-m-d') . '-' . uniqid() . '.' . $image->getClientOriginalExtension();
+
+            if (!Storage::disk('public')->exists($dir)) {
+                Storage::disk('public')->makeDirectory($dir);
+            }
+
+            Storage::disk('public')->putFileAs($dir, $image, $fileName);
+
+            return $fileName;
+        }
+
+        $sourcePath = $image->getRealPath();
+        $info = getimagesize($sourcePath);
+        if (!$info || empty($info['mime'])) {
+            return false;
+        }
+        $mime = strtolower($info['mime']);
+        $format = match ($mime) {
+            'image/webp' => 'webp',
+            'image/gif'  => 'gif',
+            default      => $format,
+        };
+
+        $imageName = Carbon::now()->format('Y-m-d') . '-' . uniqid() . '.' . $format;
+
         if (!Storage::disk('public')->exists($dir)) {
             Storage::disk('public')->makeDirectory($dir);
         }
-        Storage::disk('public')->put($dir . $imageName, file_get_contents($image));
 
-        return $imageName;
+        $savePath = storage_path("app/public/{$dir}{$imageName}");
+
+        if ($mime === 'image/gif') {
+            return copy($sourcePath, $savePath) ? $imageName : false;
+        }
+
+        if ($mime === 'image/webp' && $format === 'webp') {
+            return copy($sourcePath, $savePath) ? $imageName : false;
+        }
+
+        $gdImage = match ($mime) {
+            'image/jpeg' => imagecreatefromjpeg($sourcePath),
+            'image/png'  => imagecreatefrompng($sourcePath),
+            'image/webp' => imagecreatefromwebp($sourcePath),
+            default      => false,
+        };
+
+        if (!$gdImage) {
+            return false;
+        }
+
+        if (!imageistruecolor($gdImage)) {
+            imagepalettetotruecolor($gdImage);
+        }
+
+        if (in_array($mime, ['image/png', 'image/webp'])) {
+            imagealphablending($gdImage, false);
+            imagesavealpha($gdImage, true);
+        }
+
+        $maxSize = 2500;
+        $width   = imagesx($gdImage);
+        $height  = imagesy($gdImage);
+
+        if ($width > $maxSize || $height > $maxSize) {
+            $ratio = min($maxSize / $width, $maxSize / $height);
+            $newW  = (int)($width * $ratio);
+            $newH  = (int)($height * $ratio);
+
+            $temp = imagecreatetruecolor($newW, $newH);
+
+            if (in_array($mime, ['image/png', 'image/webp'])) {
+                imagealphablending($temp, false);
+                imagesavealpha($temp, true);
+            }
+
+            imagecopyresampled(
+                $temp,
+                $gdImage,
+                0,
+                0,
+                0,
+                0,
+                $newW,
+                $newH,
+                $width,
+                $height
+            );
+
+            imagedestroy($gdImage);
+            $gdImage = $temp;
+        }
+
+        $saved = match ($format) {
+            'jpg', 'jpeg' => imagejpeg($gdImage, $savePath, 85),
+            'png'         => imagepng($gdImage, $savePath, -1),
+            'webp'        => imagewebp($gdImage, $savePath, 78),
+            default       => false,
+        };
+
+        imagedestroy($gdImage);
+
+        if ($saved)
+        {
+            foreach ((array) $oldImage as $file) {
+                if (!empty($file)) {
+                    Storage::disk('public')->delete($dir . $file);
+                }
+            }
+
+            return $imageName;
+        }
+
+        return false;
     }
 }
 
 if (!function_exists('fileRemover')) {
-    function fileRemover(string $dir, $image)
+    function fileRemover(string $dir, ?string $image = null): bool
     {
         if (!isset($image)) return true;
 
@@ -117,23 +233,22 @@ if (!function_exists('fileRemover')) {
         return true;
     }
 }
-
 if (!function_exists('paginationLimit')) {
-    function paginationLimit()
+    function paginationLimit(): int|string
     {
-        return getSession('pagination_limit') == false ? 10 : getSession('pagination_limit');
+        return !getSession('pagination_limit') ? 10 : getSession('pagination_limit');
     }
 }
-
 if (!function_exists('stepValue')) {
-    function stepValue()
+    function stepValue(): float
     {
         $points = (int)getSession('currency_decimal_point') ?? 0;
+
         return 1 / pow(10, $points);
     }
 }
 if (!function_exists('businessConfig')) {
-    function businessConfig($key, $settingsType = null)
+    function businessConfig(string $key, ?string $settingsType = null): ?BusinessSetting
     {
         try {
             $config = BusinessSetting::query()
@@ -142,16 +257,15 @@ if (!function_exists('businessConfig')) {
                     $query->where('settings_type', $settingsType);
                 })
                 ->first();
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return null;
         }
 
         return (isset($config)) ? $config : null;
     }
 }
-
 if (!function_exists('newBusinessConfig')) {
-    function newBusinessConfig($key, $settingsType = null)
+    function newBusinessConfig($key, ?string $settingsType = null): string|object|array|null
     {
         $businessSettings = Cache::rememberForever(CACHE_BUSINESS_SETTINGS, function () {
             return BusinessSetting::all();
@@ -163,14 +277,14 @@ if (!function_exists('newBusinessConfig')) {
                     $query->where('settings_type', $settingsType);
                 })
                 ->first()?->value;
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return null;
         }
         return (isset($config)) ? $config : null;
     }
 }
 if (!function_exists('referralEarningSetting')) {
-    function referralEarningSetting($key, $settingsType = null)
+    function referralEarningSetting(string $key, ?string $settingsType = null): ?ReferralEarningSetting
     {
         try {
             $config = ReferralEarningSetting::query()
@@ -179,7 +293,7 @@ if (!function_exists('referralEarningSetting')) {
                     $query->where('settings_type', $settingsType);
                 })
                 ->first();
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return null;
         }
 
@@ -187,30 +301,30 @@ if (!function_exists('referralEarningSetting')) {
     }
 }
 if (!function_exists('externalConfig')) {
-    function externalConfig($key)
+    function externalConfig(string $key): ?ExternalConfiguration
     {
         try {
             $config = ExternalConfiguration::query()
                 ->where('key', $key)
                 ->first();
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return null;
         }
         return (isset($config)) ? $config : null;
     }
 }
 if (!function_exists('checkExternalConfiguration')) {
-    function checkExternalConfiguration($externalBaseUrl, $externalTokem, $drivemondToken)
+    function checkExternalConfiguration(string $externalBaseUrl, int|string $externalToken, int|string $drivemondToken): bool
     {
         $activationMode = externalConfig('activation_mode')?->value;
         $martBaseUrl = externalConfig('mart_base_url')?->value;
         $martToken = externalConfig('mart_token')?->value;
         $systemSelfToken = externalConfig('system_self_token')?->value;
-        return $activationMode == 1 && $martBaseUrl == $externalBaseUrl && $martToken == $externalTokem && $systemSelfToken == $drivemondToken;
+        return $activationMode == 1 && $martBaseUrl == $externalBaseUrl && $martToken == $externalToken && $systemSelfToken == $drivemondToken;
     }
 }
 if (!function_exists('checkSelfExternalConfiguration')) {
-    function checkSelfExternalConfiguration()
+    function checkSelfExternalConfiguration(): bool
     {
         $activationMode = externalConfig('activation_mode')?->value;
         $martBaseUrl = externalConfig('mart_base_url')?->value;
@@ -219,13 +333,12 @@ if (!function_exists('checkSelfExternalConfiguration')) {
         return $activationMode == 1 && $martBaseUrl != null && $martToken != null && $systemSelfToken != null;
     }
 }
-
 if (!function_exists('generateReferralCode')) {
-    function generateReferralCode($user = null)
+    function generateReferralCode(?User $user = null): string
     {
         $refCode = strtoupper(Str::random(10));
         if (User::where('ref_code', $refCode)->exists()) {
-            generateReferralCode();
+            generateReferralCode($user);
         }
         if ($user) {
             $user->ref_code = $refCode;
@@ -234,10 +347,8 @@ if (!function_exists('generateReferralCode')) {
         return $refCode;
     }
 }
-
-
 if (!function_exists('responseFormatter')) {
-    function responseFormatter($constant, $content = null, $limit = null, $offset = null, $errors = []): array
+    function responseFormatter(array $constant, string|array|object|null $content = null, int|string|null $limit = null, int|string|null $offset = null, array $errors = []): array
     {
         $data = [
             'total_size' => isset($limit) ? $content->total() : null,
@@ -253,28 +364,41 @@ if (!function_exists('responseFormatter')) {
         return array_merge($responseConst, $data);
     }
 }
-
 if (!function_exists('errorProcessor')) {
-    function errorProcessor($validator)
+    function errorProcessor(Illuminate\Contracts\Validation\Validator $validator): array
     {
         $errors = [];
         foreach ($validator->errors()->getMessages() as $index => $error) {
             $errors[] = ['error_code' => $index, 'message' => translate($error[0])];
         }
+
         return $errors;
     }
 }
-
-
-if (!function_exists('autoTranslator')) {
-    function autoTranslator($q, $sl, $tl): array|string
+if (!function_exists('autoTranslator')){
+    function autoTranslator(string $q, string $sl, string $tl): string
     {
-        $res = file_get_contents("https://translate.googleapis.com/translate_a/single?client=gtx&ie=UTF-8&oe=UTF-8&dt=bd&dt=ex&dt=ld&dt=md&dt=qca&dt=rw&dt=rm&dt=ss&dt=t&dt=at&sl=" . $sl . "&tl=" . $tl . "&hl=hl&q=" . urlencode($q), $_SERVER['DOCUMENT_ROOT'] . "/transes.html");
-        $res = json_decode($res);
-        return str_replace('_', ' ', $res[0][0][0]);
+        $placeholders = [];
+        $i = 0;
+        $q = preg_replace_callback('/\{([a-zA-Z_][a-zA-Z0-9_]*)}/', function ($m) use (&$placeholders, &$i) {
+            $token = '__PH_' . $i . '__';
+            $placeholders[$token] = ":" . $m[1];
+            $i++;
+            return $token;
+        }, $q);
+
+        $url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=$sl&tl=$tl&dt=t&q=" . urlencode($q);
+        $res = file_get_contents($url);
+        $res = json_decode($res, true);
+        $translated = $res[0][0][0] ?? '';
+
+        foreach ($placeholders as $token => $original) {
+            $translated = str_ireplace($token, $original, $translated);
+        }
+
+        return $translated;
     }
 }
-
 if (!function_exists('getLanguageCode')) {
     function getLanguageCode(string $countryCode): string
     {
@@ -287,9 +411,8 @@ if (!function_exists('getLanguageCode')) {
     }
 
 }
-
 if (!function_exists('exportData')) {
-    function exportData($data, $file, $viewPath)
+    function exportData(array|Generator|\Illuminate\Support\Collection|Collection|Model|null $data, string $file, string $viewPath): View|BinaryFileResponse|StreamedResponse
     {
         return match ($file) {
             'csv' => (new FastExcel($data))->download(time() . '-file.csv'),
@@ -299,29 +422,10 @@ if (!function_exists('exportData')) {
         };
     }
 }
-
-
-if (!function_exists('log_viewer')) {
-
-    function log_viewer($request)
+if (!function_exists('logViewerNew')) {
+    function logViewerNew(Collection|LengthAwarePaginator $logs, ?string $file = null): View|BinaryFileResponse|StreamedResponse
     {
-        $search = $request['search'] ?? null;
-        $attributes['logable_type'] = $request['logable_type'];
-        if (array_key_exists('id', $request)) {
-            $attributes['logable_id'] = $request['id'];
-        }
-        if (array_key_exists('search', $request)) {
-            $attributes['search'] = $request['search'];
-        }
-
-        if (array_key_exists('user_type', $request)) {
-            $attributes['user_type'] = $request['user_type'];
-        }
-
-        $logs = new ActivityLogRepository;
-
-        if (array_key_exists('file', $request)) {
-            $logs = $logs->get(attributes: $attributes, export: true);
+        if ($file) {
             $data = $logs->map(function ($item) {
                 $objects = explode("\\", $item->logable_type);
                 return [
@@ -333,17 +437,13 @@ if (!function_exists('log_viewer')) {
                     'after' => json_encode($item?->after)
                 ];
             });
-            return exportData($data, $request['file'], 'adminmodule::log-print');
+            return exportData($data, $file, 'adminmodule::log-print');
         }
-        $logs = $logs->get(attributes: $attributes);
-
-        return view('adminmodule::activity-log', compact('logs', 'search'));
+        return view('adminmodule::activity-log', compact('logs'));
     }
 }
-
-
 if (!function_exists('get_cache')) {
-    function get_cache($key)
+    function get_cache(string $key): array|object|string|null
     {
         if (!Cache::has($key)) {
             $config = businessConfig($key)?->value;
@@ -355,9 +455,8 @@ if (!function_exists('get_cache')) {
         return Cache::get($key);
     }
 }
-
 if (!function_exists('getSession')) {
-    function getSession($key)
+    function getSession(string $key): array|object|string|bool
     {
         if (!Session::has($key)) {
             $config = businessConfig($key)?->value;
@@ -369,9 +468,8 @@ if (!function_exists('getSession')) {
         return Session::get($key);
     }
 }
-
 if (!function_exists('haversineDistance')) {
-    function haversineDistance($latitudeFrom, $longitudeFrom, $latitudeTo, $longitudeTo, $earthRadius = 6371000)
+    function haversineDistance(float $latitudeFrom, float $longitudeFrom, float $latitudeTo, float $longitudeTo, int|float $earthRadius = 6371000): float
     {
         // convert from degrees to radians
         $latFrom = deg2rad($latitudeFrom);
@@ -387,9 +485,8 @@ if (!function_exists('haversineDistance')) {
         return $angle * $earthRadius;
     }
 }
-
 if (!function_exists('getDateRange')) {
-    function getDateRange($request)
+    function getDateRange(array|string $request): array
     {
         if (is_array($request)) {
             return [
@@ -439,36 +536,31 @@ if (!function_exists('getDateRange')) {
     }
 }
 if (!function_exists('getCustomDateRange')) {
-    function getCustomDateRange($dateRange)
+    function getCustomDateRange(string $dateRange): array
     {
-        list($startDate, $endDate) = explode(' - ', $dateRange);
-        $startDate = Carbon::createFromFormat('m/d/Y', trim($startDate));
-        $endDate = Carbon::createFromFormat('m/d/Y', trim($endDate));
-        return [
-            'start' => Carbon::parse($startDate)->startOfDay(),
-            'end' => Carbon::parse($endDate)->endOfDay(),
-        ];
+        [$startDate, $endDate] = explode(' - ', $dateRange);
+        $start = Carbon::createFromFormat('m/d/Y', trim($startDate))->startOfDay();
+        $end = Carbon::createFromFormat('m/d/Y', trim($endDate))->endOfDay();
 
+        return ['start' => $start, 'end' => $end];
 
     }
 }
-
 if (!function_exists('configSettings')) {
-    function configSettings($key, $settingsType)
+    function configSettings(string $key, string $settingsType): ?stdClass
     {
         try {
             $config = DB::table('settings')->where('key_name', $key)
                 ->where('settings_type', $settingsType)->first();
-        } catch (Exception $exception) {
+        } catch (Exception) {
             return null;
         }
 
         return (isset($config)) ? $config : null;
     }
 }
-
 if (!function_exists('languageLoad')) {
-    function languageLoad()
+    function languageLoad(): array
     {
         if (\session()->has(LANGUAGE_SETTINGS)) {
             $language = \session(LANGUAGE_SETTINGS);
@@ -480,9 +572,8 @@ if (!function_exists('languageLoad')) {
     }
 
 }
-
 if (!function_exists('set_currency_symbol')) {
-    function set_currency_symbol($amount)
+    function set_currency_symbol(float $amount): string
     {
         $points = (int)getSession('currency_decimal_point') ?? 0;
         $position = getSession('currency_symbol_position') ?? 'left';
@@ -494,9 +585,8 @@ if (!function_exists('set_currency_symbol')) {
         return number_format($amount, $points) . ' ' . $symbol;
     }
 }
-
 if (!function_exists('getCurrencyFormat')) {
-    function getCurrencyFormat($amount)
+    function getCurrencyFormat(?float $amount): string
     {
         $points = (int)getSession('currency_decimal_point') ?? 0;
         $position = getSession('currency_symbol_position') ?? 'left';
@@ -507,28 +597,31 @@ if (!function_exists('getCurrencyFormat')) {
         }
 
         if ($position == 'left') {
-            return $symbol . ' ' . number_format($amount, $points);
+            return $symbol . ' ' . number_format($amount ?? 0, $points);
         } else {
-            return number_format($amount, $points) . ' ' . $symbol;
+            return number_format($amount ?? 0, $points) . ' ' . $symbol;
         }
     }
 }
-
-
 if (!function_exists('getNotification')) {
-    function getNotification($key)
+    function getNotification(string $key, ?string $group = null, ?string $type = null): array
     {
-        $notification = FirebasePushNotification::query()->firstWhere('name', $key);
+        $notification = FirebasePushNotification::query()
+            ->where('name', $key)
+            ->when($group, fn($q) => $q->where('group', $group))
+            ->when($type, fn($q) => $q->where('type', $type))
+            ->first();
+
         return [
             'title' => $notification['name'] ?? ' ',
             'description' => $notification['value'] ?? ' ',
             'status' => (bool)$notification['status'] ?? 0,
+            'action' => $notification['action'] ?? ' ',
         ];
     }
 }
-
 if (!function_exists('getMainDomain')) {
-    function getMainDomain($url)
+    function getMainDomain(string $url): string
     {
         // Remove protocol from the URL
         $url = preg_replace('#^https?://#', '', $url);
@@ -541,62 +634,114 @@ if (!function_exists('getMainDomain')) {
         return $parts[0];
     }
 }
-
 if (!function_exists('getRoutes')) {
-    function getRoutes(array $originCoordinates, array $destinationCoordinates, array $intermediateCoordinates = [], array $drivingMode = ["DRIVE"])
+    function getRoutes(array $originCoordinates, array $destinationCoordinates, array $intermediateCoordinates = [], array $drivingMode = ["DRIVE"]): array
     {
-        $apiKey = businessConfig(GOOGLE_MAP_API)?->value['map_api_key_server'] ?? '';
-        $encoded_polyline = null;
-        $responses = [];
-        $origin = implode(',', $originCoordinates);
-        $destination = implode(',', $destinationCoordinates);
-        // Convert waypoints to string format
-        $waypointsFormatted = [];
-        if ($intermediateCoordinates && !is_null($intermediateCoordinates[0][0])) {
+        $mapApiKey = businessConfig(GOOGLE_MAP_API)?->value['map_api_key_server'] ?? '';
+        $url = "https://routes.googleapis.com/directions/v2:computeRoutes";
+
+        $origin = [
+            "location" => [
+                "latLng" => [
+                    "latitude" => $originCoordinates[0],
+                    "longitude" => $originCoordinates[1]
+                ]
+            ]
+        ];
+
+        $destination = [
+            "location" => [
+                "latLng" => [
+                    "latitude" => $destinationCoordinates[0],
+                    "longitude" => $destinationCoordinates[1]
+                ]
+            ]
+        ];
+
+        // Format waypoints
+        $waypoints = [];
+        if (!empty($intermediateCoordinates) && !is_null($intermediateCoordinates[0][0])) {
             foreach ($intermediateCoordinates as $wp) {
-                $waypointsFormatted[] = $wp[0] . ',' . $wp[1];
+                $waypoints[] = [
+                    "location" => [
+                        "latLng" => [
+                            "latitude" => $wp[0],
+                            "longitude" => $wp[1]
+                        ]
+                    ]
+                ];
             }
         }
-        $waypointsString = implode('|', $waypointsFormatted);
-        $response = Http::get("https://maps.googleapis.com/maps/api/directions/json?origin=$origin&destination=$destination&departure_time=now&waypoints=$waypointsString&key=$apiKey");
+
+        $data = [
+            "origin" => $origin,
+            "destination" => $destination,
+            "intermediates" => $waypoints,
+            "travelMode" => $drivingMode[0], // DRIVE, TWO_WHEELER, etc.
+            "routingPreference" => "TRAFFIC_AWARE", // Enables traffic-based duration
+            "computeAlternativeRoutes" => false,
+            "languageCode" => "en-US",
+            "units" => "METRIC"
+        ];
+
+
+        // API Headers
+        $headers = [
+            'Content-Type' => 'application/json',
+            'X-Goog-Api-Key' => $mapApiKey,
+            'X-Goog-FieldMask' => '*'
+        ];
+
+        // Send POST request
+        $response = Http::withHeaders($headers)->post($url, $data);
+
+        if (!isset($response['routes'][0])) {
+            // Fallback to car route
+            $data['travelMode'] = 'DRIVE';
+            $response = Http::withHeaders($headers)->post($url, $data);
+        }
+
         if ($response->successful()) {
             $result = $response->json();
-            $distance = 0;
-            $duration = 0;
-            $durationInTraffic = 0;
-
-            // Process the JSON response data here
-            foreach ($result['routes'] as $route) {
-                $encoded_polyline = $route['overview_polyline']['points'];
-                foreach ($route['legs'] as $leg) {
-                    $distance += $leg['distance']['value'];
-                    $duration += $leg['duration']['value'];
-                    $durationInTraffic += $leg['duration_in_traffic']['value'] ?? $leg['duration']['value']; // Fallback to regular duration if traffic data is missing
-                }
+            if (!isset($result['routes'][0])) {
+                return ['error' => 'No route found'];
             }
 
-            $distance = str_replace(',', '', $distance);
-            $convert_to_bike = 1.2;
+            $route = $result['routes'][0];
+            $encoded_polyline = $route['polyline']['encodedPolyline'] ?? null;
+            $distance = $route['distanceMeters'] ?? 0;
+            $duration = $route['duration'] ?? '0s';
+            $durationInTraffic = $route['staticDuration'] ?? $duration; // Fallback to normal duration if no traffic data
+
+            // Convert duration to seconds
+            preg_match('/(\d+)s/i', $duration, $matches);
+            $durationSec = isset($matches[1]) ? (int)$matches[1] : 0;
+
+            // Convert traffic duration to seconds
+            preg_match('/(\d+)s/i', $durationInTraffic, $trafficMatches);
+            $durationInTrafficSec = isset($trafficMatches[1]) ? (int)$trafficMatches[1] : 0;
+
+            $convert_to_bike = 1.2; // Adjustment factor for bike mode
 
             $responses[0] = [
-                'distance' => (double)str_replace(',', '', number_format(($distance ?? 0) / 1000, 2)),
-                'distance_text' => number_format(($distance ?? 0) / 1000, 2) . ' ' . 'km',
-                'duration' => number_format((($duration / 60) / $convert_to_bike), 2) . ' ' . 'min',
-                'duration_sec' => (int)($duration / $convert_to_bike),
-                'duration_in_traffic' => number_format((($durationInTraffic / 60) / $convert_to_bike), 2) . ' ' . 'min',
-                'duration_in_traffic_sec' => (int)($durationInTraffic / $convert_to_bike),
+                'distance' => (double)number_format(($distance / 1000), 2),
+                'distance_text' => number_format(($distance / 1000), 2) . ' km',
+                'duration' => number_format((($durationSec / 60) / $convert_to_bike), 2) . ' min',
+                'duration_sec' => (int)($durationSec / $convert_to_bike),
+                'duration_in_traffic' => number_format((($durationInTrafficSec / 60) / $convert_to_bike), 2) . ' min',
+                'duration_in_traffic_sec' => (int)($durationInTrafficSec / $convert_to_bike),
                 'status' => "OK",
                 'drive_mode' => 'TWO_WHEELER',
                 'encoded_polyline' => $encoded_polyline,
             ];
 
             $responses[1] = [
-                'distance' => (double)str_replace(',', '', number_format(($distance ?? 0) / 1000, 2)),
-                'distance_text' => number_format(($distance ?? 0) / 1000, 2) . ' ' . 'km',
-                'duration' => number_format(($duration / 60), 2) . ' ' . 'min',
-                'duration_sec' => (int)$duration,
-                'duration_in_traffic' => number_format(($durationInTraffic / 60), 2) . ' ' . 'min',
-                'duration_in_traffic_sec' => (int)$durationInTraffic,
+                'distance' => (double)number_format(($distance / 1000), 2),
+                'distance_text' => number_format(($distance / 1000), 2) . ' km',
+                'duration' => number_format(($durationSec / 60), 2) . ' min',
+                'duration_sec' => $durationSec,
+                'duration_in_traffic' => number_format(($durationInTrafficSec / 60), 2) . ' min',
+                'duration_in_traffic_sec' => $durationInTrafficSec,
                 'status' => "OK",
                 'drive_mode' => 'DRIVE',
                 'encoded_polyline' => $encoded_polyline,
@@ -604,15 +749,12 @@ if (!function_exists('getRoutes')) {
 
             return $responses;
         } else {
-            // Handle the error if the request was not successful
-            return $response->status();
+            return ['error' => 'API request failed', 'status' => $response->status(), 'details' => $response];
         }
-
     }
 }
-
 if (!function_exists('onErrorImage')) {
-    function onErrorImage($data, $src, $error_src, $path)
+    function onErrorImage(?string $data = null, ?string $src = null, ?string $error_src = null, ?string $path = null): ?string
     {
         if (isset($data) && strlen($data) > 1 && Storage::disk('public')->exists($path . $data)) {
             return $src;
@@ -620,37 +762,25 @@ if (!function_exists('onErrorImage')) {
         return $error_src;
     }
 }
-
-if (!function_exists('checkPusherConnection')) {
-    function checkPusherConnection($event)
+if (!function_exists('checkReverbConnection')) {
+    function checkReverbConnection(): bool
     {
-        try {
-            // Pusher configuration
-            $pusher = new Pusher(
-                config('broadcasting.connections.pusher.key'),
-                config('broadcasting.connections.pusher.secret'),
-                config('broadcasting.connections.pusher.app_id'),
-                config('broadcasting.connections.pusher.options')
-            );
-//            if (!empty($event)) {
-//                $event;
-//            }
+        $host = env('REVERB_HOST') ?? '127.0.0.1';
+        $port = env('REVERB_PORT') ?? 6001;
+        $timeout = 2;
 
+        $connection = @fsockopen($host, $port, $errno, $errstr, $timeout);
 
-            return response()->json(['message' => 'Pusher connection established successfully']);
-        } catch (PusherException $e) {
-
-        } catch (\Exception $e) {
-            // If cURL error 52 occurs
-            if (strpos($e->getMessage(), 'cURL error 52') !== false) {
-                return true;
-            }
+        if (is_resource($connection)) {
+            fclose($connection);
             return true;
         }
+
+        return false;
     }
 }
 if (!function_exists('spellOutNumber')) {
-    function spellOutNumber($number)
+    function spellOutNumber(int|float|string $number): string
     {
         $number = strval($number);
         $digits = [
@@ -721,7 +851,7 @@ if (!function_exists('spellOutNumber')) {
     }
 }
 if (!function_exists('abbreviateNumber')) {
-    function abbreviateNumber($number)
+    function abbreviateNumber(int|float|string $number): string
     {
         $points = (int)getSession('currency_decimal_point') ?? 0;
         $abbreviations = ['', 'K', 'M', 'B', 'T'];
@@ -736,10 +866,9 @@ if (!function_exists('abbreviateNumber')) {
         return round($abbreviated_number, $points) . $abbreviations[$abbreviation_index];
     }
 }
-
 if (!function_exists('abbreviateNumberWithSymbol')) {
     #TODO
-    function abbreviateNumberWithSymbol($number)
+    function abbreviateNumberWithSymbol(int|float|string $number): string
     {
         $points = (int)getSession('currency_decimal_point') ?? 0;
         $position = getSession('currency_symbol_position') ?? 'left';
@@ -765,62 +894,31 @@ if (!function_exists('abbreviateNumberWithSymbol')) {
 
     }
 }
-if (!function_exists('removeInvalidCharcaters')) {
-    function removeInvalidCharcaters($str)
+if (!function_exists('removeInvalidCharacters')) {
+    function removeInvalidCharacters(string $str): string
     {
         return str_ireplace(['\'', '"', ';', '<', '>'], ' ', $str);
     }
 }
-
 if (!function_exists('textVariableDataFormat')) {
-    function textVariableDataFormat($value, $tipsAmount = null, $levelName = null, $walletAmount = null, $tripId = null,
-                                    $userName = null, $withdrawNote = null, $paidAmount = null, $methodName = null, $referralRewardAmount = null, $otp = null)
+    function textVariableDataFormat(string $value, int|float|string|null $tipsAmount = null, ?string $levelName = null, int|float|string|null $walletAmount = null, int|float|string|null $tripId = null,
+                                    ?string $userName = null, ?string $withdrawNote = null, int|float|string|null $paidAmount = null, ?string $methodName = null,
+                                    int|float|string|null $referralRewardAmount = null, int|float|string|null $otp = null, int|float|string|null $parcelId = null, int|float|string|null $approximateAmount = null,
+                                    ?string $sentTime = null, ?string $vehicleCategory = null, ?string $reason = null, ?string $dropOffLocation = null,
+                                    ?string $customerName = null, ?string $driverName = null, ?string $pickUpLocation = null, ?string $dueTime = null,
+                                    int|float|string|null $bonusAmount = null, int|float|string|null $totalAmount = null,
+                                    ?string $locale = null): array|string|Translator|null
     {
-        $data = $value;
-        if ($value) {
-            if ($tipsAmount) {
-                $data = str_replace("{tipsAmount}", $tipsAmount, $data);
-            }
-            if ($paidAmount) {
-                $data = str_replace("{paidAmount}", $paidAmount, $data);
-            }
-            if ($methodName) {
-                $data = str_replace("{methodName}", $methodName, $data);
-            }
-
-            if ($levelName) {
-                $data = str_replace("{levelName}", $levelName, $data);
-            }
-            if ($levelName == "") {
-                $data = str_replace("and reached level {levelName}", ".", $data);
-            }
-
-            if ($walletAmount) {
-                $data = str_replace("{walletAmount}", $walletAmount, $data);
-            }
-            if ($referralRewardAmount) {
-                $data = str_replace("{referralRewardAmount}", $referralRewardAmount, $data);
-            }
-
-            if ($tripId) {
-                $data = str_replace("{tripId}", $tripId, $data);
-            }
-            if ($otp) {
-                $data = str_replace("{otp}", $otp, $data);
-            }
-            if ($userName) {
-                $data = str_replace("{userName}", $userName, $data);
-            }
-            if ($withdrawNote) {
-                $data = str_replace("{withdrawNote}", ('Please read carefully this note : ' . $withdrawNote . " If you have any questions, feel free to contact our support team"), $data);
-            }
-        }
-
-        return $data;
+        $replace = compact(
+            'tipsAmount', 'levelName', 'walletAmount', 'tripId', 'userName', 'withdrawNote',
+            'paidAmount', 'methodName', 'referralRewardAmount', 'otp', 'parcelId', 'approximateAmount',
+            'sentTime', 'vehicleCategory', 'reason', 'dropOffLocation', 'customerName', 'driverName', 'pickUpLocation', 'dueTime', 'bonusAmount', 'totalAmount'
+        );
+        return translate(key: $value, replace: array_filter($replace, fn($value) => $value !== null), locale: $locale);
     }
 }
 if (!function_exists('smsTemplateDataFormat')) {
-    function smsTemplateDataFormat($value, $customerName = null, $parcelId = null, $trackingLink = null)
+    function smsTemplateDataFormat(string $value, ?string $customerName = null, int|string|null $parcelId = null, ?string $trackingLink = null): string
     {
         $data = $value;
         if ($value) {
@@ -876,9 +974,8 @@ if (!function_exists('checkMaintenanceMode')) {
         ];
     }
 }
-
 if (!function_exists('insertBusinessSetting')) {
-    function insertBusinessSetting($keyName, $settingType = null, $value = null)
+    function insertBusinessSetting(string $keyName, ?string $settingType = null, string|array|null $value = null): bool
     {
         $data = BusinessSetting::where('key_name', $keyName)->where('settings_type', $settingType)->first();
         if (!$data) {
@@ -891,9 +988,8 @@ if (!function_exists('insertBusinessSetting')) {
         return true;
     }
 }
-
 if (!function_exists('hexToRgb')) {
-    function hexToRgb($hex)
+    function hexToRgb(string $hex): string
     {
         // Remove the hash at the start if it's there
         $hex = ltrim($hex, '#');
@@ -911,9 +1007,8 @@ if (!function_exists('hexToRgb')) {
         return "$r, $g, $b";
     }
 }
-
 if (!function_exists('formatCustomDate')) {
-    function formatCustomDate($date)
+    function formatCustomDate(string|DateTimeInterface $date): string
     {
         $carbonDate = Carbon::parse($date);
         $now = Carbon::now();
@@ -924,16 +1019,14 @@ if (!function_exists('formatCustomDate')) {
             return 'Yesterday';
         } elseif ($carbonDate->diffInDays($now) <= 5) {
             // Returns "X days ago" for dates within the last 5 days
-            return $carbonDate->diffInDays($now) . ' days ago';
+            return (int)$carbonDate->diffInDays($now) . ' days ago';
         } else {
             return $carbonDate->format('d M Y'); // e.g., 17 Nov 2024
         }
     }
 }
-
-
 if (!function_exists('formatCustomDateForTooltip')) {
-    function formatCustomDateForTooltip($dateTime)
+    function formatCustomDateForTooltip(string $dateTime): string
     {
         $timestamp = strtotime($dateTime);
         $now = time();
@@ -950,12 +1043,11 @@ if (!function_exists('formatCustomDateForTooltip')) {
         return date('d M Y', $timestamp);
     }
 }
-
 if (!function_exists('getExtensionIcon')) {
-    function getExtensionIcon($document)
+    function getExtensionIcon(string $document): string
     {
         $extension = pathinfo($document, PATHINFO_EXTENSION);
-        $asset = asset('assets/admin-module/img/file-format/svg');
+        $asset = dynamicAsset('public/assets/admin-module/img/file-format/svg');
         return match ($extension) {
             'pdf' => $asset . '/pdf.svg',
             'cvc' => $asset . '/cvc.svg',
@@ -967,23 +1059,237 @@ if (!function_exists('getExtensionIcon')) {
             'png' => $asset . '/png.svg',
             'xls' => $asset . '/xls.svg',
             'xlsx' => $asset . '/xlsx.svg',
-            default => asset('assets/admin-module/img/document-upload.png'),
+            default => dynamicAsset('public/assets/admin-module/img/document-upload.png'),
         };
     }
 }
-
 if (!function_exists('convertTimeToSecond')) {
-    function convertTimeToSecond($time, $type)
+    function convertTimeToSecond(int|float|string|null $time, string $type): ?float
     {
+        if (empty($time))
+        {
+            return null;
+        }
+
         $time = floatval($time);
 
         return match (strtolower($type)) {
             'second' => $time,
             'minute' => $time * 60,
             'hour' => $time * 3600,
+            'day' => $time * 86400,
             default => null,
         };
     }
 }
+if (!function_exists('convertToSnakeCaseIfNeeded')) {
+    function convertToSnakeCaseIfNeeded(string $string): string
+    {
+        if (str_contains($string, '-')) {
+            return str_replace('-', '_', $string);
+        }
+        return $string;
+    }
+}
+if (!function_exists('pushSentTime')){
+    function pushSentTime(string|DateTimeInterface $time): string
+    {
+        return Carbon::parse($time)->format('d M Y - h:i A');
+    }
+}
+if (!function_exists('distanceCalculator')) {
+    function distanceCalculator(array $data, int|float|string $earthRadius = 6371): float
+    {
+        $fromLongitude = (float)$data['from_longitude'];
+        $fromLatitude = (float)$data['from_latitude'];
+        $toLongitude = (float)$data['to_longitude'];
+        $toLatitude = (float)$data['to_latitude'];
+        $latDifference = deg2rad($toLatitude - $fromLatitude);
+        $lonDifference = deg2rad($toLongitude - $fromLongitude);
 
+        $a = sin($latDifference / 2) * sin($latDifference / 2) +
+            cos(deg2rad($fromLatitude)) * cos(deg2rad($toLatitude)) *
+            sin($lonDifference / 2) * sin($lonDifference / 2);
 
+        $c = 2 * atan2(sqrt($a), sqrt(1 - $a));
+
+        return $earthRadius * $c;
+    }
+}
+if (!function_exists('enableCronJobs')) {
+    function enableCronJobs(array $commands): void
+    {
+        try {
+            $projectRoot = base_path();
+            $existingCronJobs = trim(shell_exec('crontab -l 2>/dev/null'));
+
+            $newCrons = [];
+            foreach ($commands as $command) {
+                $cron = "* * * * * cd $projectRoot && php artisan $command >> /dev/null 2>&1";
+                if (!str_contains($existingCronJobs, "php artisan $command")) {
+                    $newCrons[] = $cron;
+                } else {
+                    info("Cron for '$command' already exists");
+                }
+            }
+
+            if (!empty($newCrons)) {
+                $cronFile = tempnam(sys_get_temp_dir(), 'cron');
+                $newCronJobs = $existingCronJobs
+                    ? rtrim($existingCronJobs) . PHP_EOL . implode(PHP_EOL, $newCrons) . PHP_EOL
+                    : implode(PHP_EOL, $newCrons) . PHP_EOL;
+
+                file_put_contents($cronFile, $newCronJobs);
+                $output = [];
+                $returnVar = 0;
+                exec("crontab $cronFile 2>&1", $output, $returnVar);
+                if ($returnVar !== 0 || !empty($output)) {
+                    info("crontab exec output: " . implode("\n", $output));
+                    info("crontab exec return code: $returnVar");
+                }
+                unlink($cronFile);
+
+                if ($returnVar === 0) {
+                    info("Cron jobs added successfully");
+                } else {
+                    info("Failed to update cron jobs, return code: $returnVar");
+                }
+            }
+        } catch (Throwable $e) {
+            info("Failed to enable cron jobs, error: " . $e->getMessage());
+        }
+    }
+}
+if (!function_exists('setSymbol')) {
+    function setSymbol(string $type, float $value): string
+    {
+        return $type == PERCENTAGE ? $value . '%' : set_currency_symbol($value);
+    }
+}
+if (!function_exists('dynamicAsset')) {
+    function dynamicAsset(string $path): string
+    {
+        if (DOMAIN_POINTED_DIRECTORY == 'public') {
+            $position = strpos($path, 'public/');
+            $result = $path;
+            if ($position === 0) {
+                $result = preg_replace('/public/', '', $path, 1);
+            }
+        } else {
+            $result = $path;
+        }
+        return asset($result);
+    }
+}
+if (!function_exists('dynamicStorage')) {
+    function dynamicStorage(string $path): string
+    {
+        if (DOMAIN_POINTED_DIRECTORY == 'public') {
+            $result = str_replace('storage/app/public', 'storage', $path);
+        } else {
+            $result = $path;
+        }
+        return asset($result);
+    }
+}
+if (!function_exists('convertToBytes')){
+    function convertToBytes(string $value): int
+    {
+        $value = trim($value);
+        $unit = strtolower($value[strlen($value) - 1]);
+        $num = (int) $value;
+        $multipliers = ['g' => 1073741824, 'm' => 1048576, 'k' => 1024];
+
+        return $num * ($multipliers[$unit] ?? 1);
+    }
+}
+
+if (!function_exists('convertBytesToKiloBytes')){
+    function convertBytesToKiloBytes(string $value): int
+    {
+        return $value / 1024;
+    }
+}
+
+if (!function_exists('convertToReadableSize')) {
+    function convertToReadableSize(int $bytes): string
+    {
+        if ($bytes >= 1073741824) {
+            return round($bytes / 1073741824, 2) . 'GB';
+        } elseif ($bytes >= 1048576) {
+            return round($bytes / 1048576, 2) . 'MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . 'KB';
+        }
+        return $bytes . 'B';
+    }
+}
+if (!function_exists('maxUploadSize'))
+{
+    function maxUploadSize(string $fileType): int
+    {
+        $phpLimit = convertToBytes(ini_get('upload_max_filesize'));
+        $appLimit = env('APP_MODE') === 'demo' ? convertToBytes('1M') : convertToBytes($fileType === 'image' ? '20M' : '50M');
+
+        return min($phpLimit, $appLimit);
+    }
+}
+if (!function_exists('readableUploadMaxFileSize'))
+{
+     function readableUploadMaxFileSize(string $fileType): string
+    {
+        return  convertToReadableSize(maxUploadSize($fileType));
+    }
+}
+if (!function_exists('showValidationMessageForUploadMaxSize')) {
+    function showValidationMessageForUploadMaxSize(array $files, bool $isAjax, bool $doesExpectJson)
+    {
+        $maximumSize = readableUploadMaxFileSize('image');
+
+        foreach (flattenFiles($files) as $key => $file)
+        {
+            $fieldName = str_contains($key, '.') ? explode('.', $key)[0] : $key;
+            $items = is_array($file) ? $file : [$file];
+            foreach ($items as $item)
+            {
+                if ($item->getError() == 0) continue;
+                $fileExtension = $item->getClientOriginalExtension();
+                if(in_array($fileExtension, ['txt', 'rtf', 'doc', 'docx', 'pdf', 'odt', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'log', 'zip', 'mp4' ,'mkv' , 'avi', 'mov', 'webm']))
+                {
+                    $maximumSize = readableUploadMaxFileSize('file');
+                }
+
+                $message = translate(key: '{imageName} must be less than {maxSize}', replace: ['imageName' => $item->getClientOriginalName(), 'maxSize' => $maximumSize]);
+
+                if ($isAjax || $doesExpectJson) {
+                    throw new HttpResponseException(response()->json([
+                        'errors' => [['error_code' => $fieldName, 'message' => $message]]
+                    ], 403));
+                }
+
+                Toastr::error($message);
+                throw new HttpResponseException(Redirect::back()->withInput());
+            }
+        }
+    }
+}
+if (!function_exists('flattenFiles')) {
+    function flattenFiles(array $files): array
+    {
+        $result = [];
+
+        foreach ($files as $key => $file) {
+            if ($file instanceof UploadedFile) {
+                $result[$key] = $file;
+            } elseif (is_array($file)) {
+                foreach ($file as $index => $nestedFile) {
+                    if ($nestedFile instanceof UploadedFile) {
+                        $result[$key][$index] = $nestedFile;
+                    }
+                }
+            }
+        }
+
+        return $result;
+    }
+}

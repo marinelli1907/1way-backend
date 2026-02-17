@@ -22,10 +22,11 @@ class DriverStoreOrUpdateRequest extends FormRequest
             'phone' => 'required|regex:/^([0-9\s\-\+\(\)]*)$/|min:8|max:17|unique:users,phone,' . $id,
             'password' => !is_null($this->password) ? 'required|min:8' : 'nullable',
             'confirm_password' => [
-                Rule::requiredIf(function (){
+                Rule::requiredIf(function () {
                     return $this->password != null;
                 }),
-                'same:password'],
+                'same:password'
+            ],
             'profile_image' => [
                 Rule::requiredIf(empty($id)),
                 'image',
@@ -34,6 +35,10 @@ class DriverStoreOrUpdateRequest extends FormRequest
             ],
             'identification_type' => 'required|in:passport,driving_license,nid',
             'identification_number' => 'required',
+
+            // ✅ 1Way: driver split percent (0-100)
+            'driver_split_percent' => 'nullable|numeric|min:0|max:100',
+
             'identity_images' => 'array',
             'existing_documents' => 'nullable|array',
             'other_documents' => 'array',

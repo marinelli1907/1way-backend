@@ -1007,11 +1007,16 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
         if ($request->status == 'cancelled' && $trip->driver_id && $trip->current_status == ONGOING) {
             $this->updateRelationalTable($attributes);
             $this->cancellationPercentChecker(auth('api')->user());
-            $this->completedRideChecker($trip->driver);
+            if ($trip->driver) {
+                $this->completedRideChecker($trip->driver);
+            }
         } elseif ($request->status == 'completed' && $trip->driver_id && $trip->current_status == ONGOING) {
             $this->updateRelationalTable($attributes);
             $this->completedRideChecker(auth('api')->user());
-            $this->completedRideChecker($trip->driver);
+            if ($trip->driver) {
+                $this->completedRideChecker($trip->driver);
+            }
+            \Modules\TripManagement\Service\TripSettlementService::settle($trip->id);
         } else {
             $this->updateRelationalTable($attributes);
         }
@@ -1091,8 +1096,11 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             }
             $attributes['coordinate']['drop_coordinates'] = new Point($trip->driver->lastLocations->latitude, $trip->driver->lastLocations->longitude);
 
-            $this->driverDetailService->updateBy(criteria: ['user_id' => auth('api')->id()], data: ['availability_status' => 'available']);
-        }
+             = auth('api')->id();
+            if () {
+                ->driverDetailService->updateBy(criteria: ['user_id' => ], data: ['availability_status' => 'available']);
+            }
+}
 
         $data = $this->updateRelationalTable($attributes);
 

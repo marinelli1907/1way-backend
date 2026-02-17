@@ -4,7 +4,9 @@ namespace Modules\TripManagement\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Modules\TripManagement\Entities\ParcelRefund;
+use Modules\TripManagement\Entities\TripRequest;
 use Modules\TripManagement\Observers\ParcelRefundObserver;
+use Modules\TripManagement\Observers\TripRequestObserver;
 
 // Interfaces
 use Modules\TripManagement\Service\Interfaces\FareBiddingLogServiceInterface;
@@ -49,7 +51,10 @@ class TripManagementServiceProvider extends ServiceProvider
         $this->registerConfig();
         $this->registerViews();
         $this->loadMigrationsFrom(module_path($this->moduleName, 'Database/Migrations'));
+
+        // Observers
         ParcelRefund::observe(ParcelRefundObserver::class);
+        TripRequest::observe(TripRequestObserver::class);
     }
 
     public function register()

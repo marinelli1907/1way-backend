@@ -46,6 +46,7 @@ class User extends Authenticatable
         'ref_code',
         'user_type',
         'role_id',
+        'driver_split_percent', // ✅ ADDED SAFELY
         'remember_token',
         'is_active',
         'current_language_key',
@@ -131,14 +132,12 @@ class User extends Authenticatable
 
     public function getCustomerPendingTrips()
     {
-        return $this->customerTrips()
-            ->where('current_status', PENDING)->get();
+        return $this->customerTrips()->where('current_status', PENDING)->get();
     }
 
     public function getCustomerAcceptedTrips()
     {
-        return $this->customerTrips()
-            ->where('current_status', ACCEPTED)->get();
+        return $this->customerTrips()->where('current_status', ACCEPTED)->get();
     }
 
     public function getCustomerUnpaidParcelAndTrips()
@@ -168,8 +167,7 @@ class User extends Authenticatable
 
     public function getCustomerOngingTrips()
     {
-        return $this->customerTrips()
-            ->where('current_status', ONGOING)->get();
+        return $this->customerTrips()->where('current_status', ONGOING)->get();
     }
 
     public function driverTrips()
@@ -179,8 +177,7 @@ class User extends Authenticatable
 
     public function getDriverLastTrip()
     {
-        return $this->driverTrips()
-            ->whereIn('current_status', DV_DELETE_TRIP_CURRENT_STATUS)->get();
+        return $this->driverTrips()->whereIn('current_status', DV_DELETE_TRIP_CURRENT_STATUS)->get();
     }
 
     public function logs()
@@ -258,46 +255,6 @@ class User extends Authenticatable
         return $this->hasMany(ChannelUser::class, 'user_id', 'id');
     }
 
-    public function getCompletionPercentAttribute()
-    {
-        $attributes = [
-            'first_name',
-            'last_name',
-            'email',
-            'phone',
-            'identification_number',
-            'identification_type',
-            'identification_image',
-            'other_documents',
-            'date_of_birth',
-            'profile_image'
-        ];
-
-        $complete = collect($attributes)
-            ->map(fn($attribute) => $this->getAttribute($attribute))
-            ->filter()
-            ->count();
-        return ($complete / count($attributes)) * 100;
-    }
-
-    public function isProfileVerified()
-    {
-        return $this?->first_name && $this?->last_name == null ? 0 : 1;
-    }
-
-    public function vehicleStatus()
-    {
-        // 0 = no_vehicle_added, 1 = vehicle_not_approved, 2 = vehicle_approved
-        $vehicleStatus = 0;
-        if ($this->vehicle) {
-            $vehicleStatus = 1;
-            if ($this->vehicle->is_active) {
-                $vehicleStatus = 2;
-            }
-        }
-        return $vehicleStatus;
-    }
-
     protected static function boot()
     {
         parent::boot();
@@ -306,34 +263,10 @@ class User extends Authenticatable
             if (in_array($item->user_type, ['customer', 'driver'])) {
                 $notification = new AdminNotification();
                 $notification->model = 'user';
-                $notification->model_id = $item->getAttributes()['id'];
+                $notification->model_id = $item->id;
                 $notification->message = 'new_' . $item->user_type . '_registered';
                 $notification->save();
             }
         });
-
-        static::updated(function ($item) {
-            $array = [];
-            foreach ($item->changes as $key => $change) {
-                $array[$key] = $item->original[$key];
-            }
-            if (!empty($array)) {
-                $log = new ActivityLog();
-                $log->edited_by = auth()->user()->id ?? 'user_update';
-                $log->before = $array;
-                $log->after = $item->changes;
-                $log->user_type = $item->user_type;
-                $item->logs()->save($log);
-            }
-        });
-
-        static::deleted(function ($item) {
-            $log = new ActivityLog();
-            $log->edited_by = auth()->user()->id;
-            $log->before = $item->original;
-            $item->logs()->save($log);
-        });
-
     }
-
 }

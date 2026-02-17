@@ -22,3 +22,9 @@ yarn-error.log
 elect*
 er_type*
 ers')*
+
+# local/temporary
+*.bak.*
+*.fixbak*
+*.DS_Store
+public/.DS_Store
