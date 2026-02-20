@@ -17,7 +17,7 @@ class DashboardRepository implements DashboardInterface
 
     public function getZoneWithcenter()
     {
-        return $this->zone->selectRaw("*,ST_AsText(ST_PointOnSurface(`coordinates`)) as center")->latest()->first();
+        return $this->zone->selectRaw("*,ST_AsText(ST_Centroid(ST_GeomFromWKB(ST_AsWKB(`coordinates`)))) as center")->latest()->first();
     }
 
     public function leaderBoard($attributes)
