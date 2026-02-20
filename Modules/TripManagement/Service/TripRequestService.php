@@ -1094,13 +1094,14 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             if ($request->status == 'cancelled') {
                 $attributes['fee']['cancelled_by'] = 'driver';
             }
-            $attributes['coordinate']['drop_coordinates'] = new Point($trip->driver->lastLocations->latitude, $trip->driver->lastLocations->longitude);
-
-             = auth('api')->id();
-            if () {
-                ->driverDetailService->updateBy(criteria: ['user_id' => ], data: ['availability_status' => 'available']);
+            if ($trip->driver && $trip->driver->lastLocations) {
+                $attributes['coordinate']['drop_coordinates'] = new Point(
+                    $trip->driver->lastLocations->latitude,
+                    $trip->driver->lastLocations->longitude
+                );
             }
-}
+            $this->driverDetailService->updateBy(criteria: ['user_id' => $trip->driver_id], data: ['availability_status' => 'available']);
+        }
 
         $data = $this->updateRelationalTable($attributes);
 
