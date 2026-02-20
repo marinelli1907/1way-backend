@@ -2,8 +2,8 @@
 set -euo pipefail
 
 BASE="${BASE:-https://api.1wayride.com}"
-LOGIN="${LOGIN:-15555550999}"
-PASS="${PASS:-Test1234!}"
+LOGIN="${LOGIN:-15555550124}"
+PASS="${PASS:-password}"
 LIMIT="${LIMIT:-20}"
 OFFSET="${OFFSET:-1}"
 

@@ -89,14 +89,31 @@ class TimeTrackController extends Controller
             ->latest()
             ->first();
 
+        // Create a time_track for today if one doesn't exist yet so the
+        // toggle never crashes on a null $track (e.g. freshly-seeded driver).
+        if (!$track) {
+            $track = $this->track->newInstance([
+                'user_id'       => $id,
+                'date'          => date('Y-m-d'),
+                'total_online'  => 0,
+                'total_offline' => 0,
+                'total_idle'    => 0,
+                'total_driving' => 0,
+            ]);
+            $track->save();
+            $track->setRelation('latestLog', null);
+        }
+
         if ($details['is_online']) {
             //means he is going to be offline
 
-            $track->latestLog()->update([
-                'offline_at' => now()
-            ]);
-            $track->total_online += Carbon::parse($track?->latestLog?->online_at)->diffInMinutes(now());
-            $track->save();
+            if ($track->latestLog) {
+                $track->latestLog()->update([
+                    'offline_at' => now()
+                ]);
+                $track->total_online += Carbon::parse($track->latestLog->online_at)->diffInMinutes(now());
+                $track->save();
+            }
 
         }
 

@@ -4,7 +4,7 @@ set -euo pipefail
 BASE="${BASE:-https://api.1wayride.com}"
 
 LOGIN="${LOGIN:-15555550123}"
-PASS="${PASS:-Test1234!}"
+PASS="${PASS:-password}"
 
 PICKUP_LAT="${PICKUP_LAT:-41.4993}"
 PICKUP_LNG="${PICKUP_LNG:--81.6944}"

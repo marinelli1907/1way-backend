@@ -14,15 +14,15 @@ curl -fsS "$BASE_URL" >/dev/null || {
 echo "✅ Backend OK"
 
 echo
-echo "2) Rider flow..."
-./dev/rider_smoke_test.sh || {
+echo "2) Rider flow (creates ride, does NOT cancel so driver can pick it up)..."
+RIDER_CANCEL=0 ./dev/rider_smoke_test.sh || {
   echo "❌ Rider flow failed"
   exit 1
 }
 echo "✅ Rider flow OK"
 
 echo
-echo "3) Driver flow..."
+echo "3) Driver flow (finds pending ride created above)..."
 ./dev/driver_smoke_test.sh || {
   echo "❌ Driver flow failed"
   exit 1
