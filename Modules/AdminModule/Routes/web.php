@@ -5,6 +5,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\ActivityLogController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\PlaceholderController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SettingController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SharedController;
@@ -81,6 +82,74 @@ Route::get('/', 'index')->name('root');
         Route::post('/tools/suggest-pricing', 'suggestPricing')->name('tools.suggest-pricing');
     });
     // ── End AI ───────────────────────────────────────────────────────────────
+
+    // ── Placeholder routes for sidebar items not yet fully implemented ────────
+    // Dashboard section
+    Route::get('kpis',   [PlaceholderController::class, 'show'])->name('kpis.index');
+    Route::get('alerts', [PlaceholderController::class, 'show'])->name('alerts.index');
+
+    // Operations
+    Route::get('control-room',   [PlaceholderController::class, 'show'])->name('control-room.index');
+    Route::get('cancellations',  [PlaceholderController::class, 'show'])->name('cancellations.index');
+    Route::get('support/tickets',[PlaceholderController::class, 'show'])->name('support.tickets.index');
+
+    // Calendar & Events
+    Route::get('calendar',            [PlaceholderController::class, 'show'])->name('calendar.index');
+    Route::get('events',              [PlaceholderController::class, 'show'])->name('events.index');
+    Route::get('events/manage',       [PlaceholderController::class, 'show'])->name('events.manage');
+    Route::get('event-ride-planner',  [PlaceholderController::class, 'show'])->name('event-ride-planner.index');
+    Route::get('venues',              [PlaceholderController::class, 'show'])->name('venues.index');
+    Route::get('event-analytics',     [PlaceholderController::class, 'show'])->name('event-analytics.index');
+
+    // Promotions & Partners
+    Route::get('businesses',          [PlaceholderController::class, 'show'])->name('businesses.index');
+    Route::get('promoted-listings',   [PlaceholderController::class, 'show'])->name('promoted-listings.index');
+    Route::get('ride-incentives',     [PlaceholderController::class, 'show'])->name('ride-incentives.index');
+    Route::get('promo-performance',   [PlaceholderController::class, 'show'])->name('promo-performance.index');
+    Route::get('payout-rules',        [PlaceholderController::class, 'show'])->name('payout-rules.index');
+
+    // Users
+    Route::get('roles',               [PlaceholderController::class, 'show'])->name('roles.index');
+    Route::get('reviews',             [PlaceholderController::class, 'show'])->name('reviews.index');
+
+    // Driver Ops
+    Route::get('driver-applications', [PlaceholderController::class, 'show'])->name('driver-applications.index');
+    Route::get('driver-documents',    [PlaceholderController::class, 'show'])->name('driver-documents.index');
+    Route::get('driver-payout-splits',[PlaceholderController::class, 'show'])->name('driver-payout-splits.index');
+    Route::get('driver-tiers',        [PlaceholderController::class, 'show'])->name('driver-tiers.index');
+    Route::get('driver-availability', [PlaceholderController::class, 'show'])->name('driver-availability.index');
+    Route::get('driver-performance',  [PlaceholderController::class, 'show'])->name('driver-performance.index');
+
+    // Payments & Finance
+    Route::get('cash-collect',        [PlaceholderController::class, 'show'])->name('cash-collect.index');
+    Route::get('refunds',             [PlaceholderController::class, 'show'])->name('refunds.index');
+    Route::get('commissions',         [PlaceholderController::class, 'show'])->name('commissions.index');
+    Route::get('revenue-reports',     [PlaceholderController::class, 'show'])->name('revenue-reports.index');
+
+    // Business Center
+    Route::get('business-settings',   [PlaceholderController::class, 'show'])->name('business-settings.index');
+    Route::get('pricing-rules',       [PlaceholderController::class, 'show'])->name('pricing-rules.index');
+    Route::get('taxes-fees',          [PlaceholderController::class, 'show'])->name('taxes-fees.index');
+    Route::get('invoices',            [PlaceholderController::class, 'show'])->name('invoices.index');
+    Route::get('subscriptions',       [PlaceholderController::class, 'show'])->name('subscriptions.index');
+    Route::get('audit-logs',          [PlaceholderController::class, 'show'])->name('audit-logs.index');
+
+    // AI Center sidebar items (distinct from the built AI routes above)
+    Route::get('ai/assistant',        [PlaceholderController::class, 'show'])->name('ai.assistant.index');
+    Route::get('ai/fraud',            [PlaceholderController::class, 'show'])->name('ai.fraud.index');
+    Route::get('ai/pricing',          [PlaceholderController::class, 'show'])->name('ai.pricing.index');
+    Route::get('ai/supply',           [PlaceholderController::class, 'show'])->name('ai.supply.index');
+    Route::get('ai/promo',            [PlaceholderController::class, 'show'])->name('ai.promo.index');
+    Route::get('ai/autoreplies',      [PlaceholderController::class, 'show'])->name('ai.autoreplies.index');
+
+    // System
+    Route::get('system/config',         [PlaceholderController::class, 'show'])->name('system.config.index');
+    Route::get('system/notifications',  [PlaceholderController::class, 'show'])->name('system.notifications.index');
+    Route::get('system/integrations',   [PlaceholderController::class, 'show'])->name('system.integrations.index');
+    Route::get('system/api-keys',       [PlaceholderController::class, 'show'])->name('system.api-keys.index');
+    Route::get('system/backups',        [PlaceholderController::class, 'show'])->name('system.backups.index');
+    Route::get('system/maintenance',    [PlaceholderController::class, 'show'])->name('system.maintenance.index');
+    // ── End placeholder routes ────────────────────────────────────────────────
 });
 Route::controller(SharedController::class)->group(function () {
     Route::get('lang/{locale}', 'lang')->name('lang');
