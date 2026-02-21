@@ -46,6 +46,8 @@ class User extends Authenticatable
         'ref_code',
         'user_type',
         'role_id',
+        'driver_split_percent',
+        'city_region',
         'remember_token',
         'is_active',
         'current_language_key',
@@ -55,7 +57,6 @@ class User extends Authenticatable
         'deleted_at',
         'created_at',
         'updated_at',
-        'driver_split_percent',
     ];
 
     protected $casts = [
@@ -113,6 +114,16 @@ class User extends Authenticatable
     public function lastLocations()
     {
         return $this->hasOne(UserLastLocation::class, 'user_id');
+    }
+
+    public function onboardingStatus()
+    {
+        return $this->hasOne(DriverOnboardingStatus::class, 'driver_id');
+    }
+
+    public function inviteTokens()
+    {
+        return $this->hasMany(DriverInviteToken::class, 'driver_id');
     }
 
     public function customerTripsStatus()

@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\CashCollectController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\LevelAccessController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\DriverController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\QuickAddDriverController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\WaitlistController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\WithdrawalController;
@@ -99,6 +100,17 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
     });
 
     Route::group(['prefix' => 'driver', 'as' => 'driver.'], function () {
+
+        // ── Quick Add Driver (Part D) ─────────────────────────────────────
+        Route::controller(QuickAddDriverController::class)->prefix('quick-add')->name('quick-add.')->group(function () {
+            Route::get('/',                                  'create')->name('create');
+            Route::post('/',                                 'store')->name('store');
+            Route::get('{id}/show',                          'show')->name('show');
+            Route::post('{id}/regenerate-invite',            'regenerateInvite')->name('regenerate-invite');
+            Route::post('{id}/onboarding',                   'updateOnboarding')->name('onboarding');
+        });
+        // ── End Quick Add ────────────────────────────────────────────────
+
         Route::controller(DriverController::class)->group(function () {
             Route::get('/', 'index')->name('index');
             Route::get('create', 'create')->name('create');
@@ -210,5 +222,11 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
         });
     });
 
+});
+
+// ── Driver Invite (public — no admin auth required) ───────────────────────────
+Route::controller(QuickAddDriverController::class)->prefix('driver/invite')->name('driver.invite.')->group(function () {
+    Route::get('accept',        'acceptInvite')->name('accept');
+    Route::post('set-password', 'setPassword')->name('set-password');
 });
 
