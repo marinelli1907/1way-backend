@@ -458,6 +458,233 @@
             'patterns' => ['admin/system/maintenance*','admin/maintenance*']
         ]))
 
-        <div class="oneway-nav__footer-space"></div>
+                    <!-- Sub Menu -->
+                        <!-- End Sub Menu -->
+                    </li>
+                    <!-- DParcel Attribute Setup-->
+
+                    <!---------- End Parcel Management --------------->
+                @endif
+
+                @if(\Illuminate\Support\Facades\Gate::any(['vehicle_view', 'vehicle_add', 'vehicle_edit', 'vehicle_delete', 'vehicle_log', 'vehicle_export']))
+                    <!---------- Start Vehicle Management --------------->
+
+                    <li class="nav-category" title="{{ translate('vehicles_management') }}">
+                        {{ translate('vehicles_management') }}
+                    </li>
+                    <li class="{{Request::is('admin/vehicle/attribute-setup/*')?'active open':''}}">
+                        <a href="{{ route('admin.vehicle.attribute-setup.brand.index') }}">
+                            <i class="bi bi-ev-front-fill"></i>
+                            <span class="link-title text-capitalize">{{ translate('vehicle_attribute_setup') }}</span>
+                        </a>
+                    </li>
+                    <li class="{{Request::is('admin/vehicle/log') || Request::is('admin/vehicle') || Request::is('admin/vehicle/show*') || Request::is('admin/vehicle/edit*')?'active open':''}}">
+                        <a href="{{ route('admin.vehicle.index') }}">
+                            <i class="bi bi-car-front-fill"></i>
+                            <span class="link-title text-capitalize">{{ translate('vehicle_list') }}</span>
+                        </a>
+                    </li>
+                    <li class="{{Request::is('admin/vehicle/request/*') ?'active open':''}}">
+                        <a href="{{ route('admin.vehicle.request.list') }}">
+                            <i class="bi bi-car-front-fill"></i>
+                            <span
+                                class="link-title text-capitalize">{{ translate('new_vehicle_request_list') }}</span>
+                        </a>
+                    </li>
+                    @if(businessConfig('update_vehicle_status', DRIVER_SETTINGS)?->value == 1)
+                        <li class="{{Request::is('admin/vehicle/update/*') ?'active open':''}}">
+                            <a href="{{ route('admin.vehicle.update.list') }}">
+                                <i class="bi bi-car-front-fill"></i>
+                                <span
+                                    class="link-title text-capitalize">{{ translate('update_vehicle_request_list') }}</span>
+                            </a>
+                        </li>
+                    @endif
+                    <li class="{{Request::is('admin/vehicle/create') ?'active open':''}}">
+                        <a href="{{ route('admin.vehicle.create') }}">
+                            <i class="bi bi-truck-front-fill"></i>
+                            <span class="link-title text-capitalize">{{ translate('add_new_vehicle') }}</span>
+                        </a>
+                    </li>
+                    <!---------- End Vehicle Management --------------->
+                @endif
+
+                @if(\Illuminate\Support\Facades\Gate::any(['fare_view', 'fare_add']))
+                    <!---------- Start Fare Management --------------->
+                    <li class="nav-category"
+                        title="{{translate('fare_management')}}">{{translate('fare_management')}}</li>
+                    <li class="{{Request::is('admin/fare/trip*')? 'active open' : ''}}">
+                        <a href="{{route('admin.fare.trip.index')}}">
+                            <i class="bi bi-sign-intersection-y-fill"></i>
+                            <span class="link-title text-capitalize">{{translate('trip_fare_setup')}}</span>
+                        </a>
+                    </li>
+                    <li class="{{Request::is('admin/fare/parcel*')? 'active open' : ''}}">
+                        <a href="{{route('admin.fare.parcel.index')}}">
+                            <i class="bi bi-box"></i>
+                            <span class="link-title text-capitalize">{{translate('parcel_delivery_fare_setup')}}</span>
+                        </a>
+                    </li>
+                    <!---------- End Fare Management --------------->
+                @endif
+
+                @if(\Illuminate\Support\Facades\Gate::any(['transaction_view', 'transaction_export']))
+                    <!---------- Start Transaction Management --------------->
+                    <li class="nav-category"
+                        title="{{translate('transactions_&_reports')}}">{{translate('transactions_&_reports')}}</li>
+                    <li class="{{Request::is('admin/transaction*')? 'active open' : ''}}">
+                        <a href="{{route('admin.transaction.index')}}">
+                            <i class="bi bi-cash-stack"></i>
+                            <span class="link-title text-capitalize">{{translate('transactions')}}</span>
+                        </a>
+                    </li>
+                    <li class="{{Request::is('admin/report*')? 'active open' : ''}}">
+                        <a href="{{route('admin.report.earning')}}">
+                            <i class="bi bi-cash-stack"></i>
+                            <span class="link-title text-capitalize">{{translate('reports')}}</span>
+                        </a>
+                    </li>
+                    <!---------- End Transaction Management --------------->
+                @endif
+
+                @if(\Illuminate\Support\Facades\Gate::any(['chatting_view']))
+                    <!---------- Start Help and Support Management --------------->
+                    <li class="nav-category"
+                        title="{{ translate('help_&_support') }}">{{ translate('help_&_support') }}</li>
+                    <li class="{{Request::is('admin/chatting*') ?'active open':''}}">
+                        <a href="{{route('admin.chatting')}}">
+                            <i class="bi bi-chat-left-dots"></i>
+                            <span class="link-title">{{ translate('chatting') }}</span>
+                        </a>
+                    </li>
+                    <!---------- End Help and Support Management --------------->
+                @endif
+
+                @if(\Illuminate\Support\Facades\Gate::any(['business_view', 'business_edit', 'business_delete']))
+                    <!---------- Start Business Management --------------->
+                    <li class="nav-category" title="Business Management">{{translate('business_management')}}</li>
+                    <li class="
+                {{Request::is('admin/business/setup*')? 'active sub-menu-opened' : ''}}">
+                        <a href="{{route('admin.business.setup.info.index')}}">
+                            <i class="bi bi-briefcase-fill"></i>
+                            <span class="link-title text-capitalize">{{translate('business_setup')}}</span>
+                        </a>
+
+                    </li>
+                    {{--                <li class="--}}
+                    {{--                {{Request::is('admin/business/external*')? 'active sub-menu-opened' : ''}}">--}}
+                    {{--                    <a href="{{route('admin.business.external.index')}}">--}}
+                    {{--                        <i class="bi bi-gear-wide-connected"></i>--}}
+                    {{--                        <span class="link-title text-capitalize">{{translate('Ecommerce Setup and Integration')}}</span>--}}
+                    {{--                    </a>--}}
+
+                    {{--                </li>--}}
+                    <li class="has-sub-item {{Request::is('admin/business/pages-media/*')? 'active sub-menu-opened' : ''}}">
+                        <a href="#">
+                            <i class="bi bi-file-earmark-break-fill"></i>
+                            <span class="link-title text-capitalize">{{translate('pages_&_media')}}</span>
+                        </a>
+                        <!-- Sub Menu -->
+                        <ul class="nav sub-menu">
+                            <li class="{{Request::is('admin/business/pages-media/business-page') ? 'active open' : ''}}">
+                                <a class="text-capitalize"
+                                   href="{{route('admin.business.pages-media.business-page.index')}}">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('business_pages')}}
+                                </a>
+                            </li>
+                            <li class="{{Request::is('admin/business/pages-media/landing-page/*') ? 'active open' : ''}}">
+                                <a class="text-capitalize"
+                                   href="{{route('admin.business.pages-media.landing-page.intro-section.index')}}">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('landing_Page_Setup')}}
+                                </a>
+                            </li>
+                            <li class="{{Request::is('admin/business/pages-media/social-media') ? 'active open' : ''}}">
+                                <a class="text-capitalize" href="{{route('admin.business.pages-media.social-media')}}">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('social_media_links')}}
+                                </a>
+                            </li>
+                        </ul>
+                        <!-- End Sub Menu -->
+                    </li>
+                    <li class="has-sub-item  {{Request::is('admin/business/configuration*')? 'active sub-menu-opened' : ''}}">
+                        <a href="#">
+                            <i class="bi bi-gear-wide-connected"></i>
+                            <span class="link-title">{{translate('configurations')}}</span>
+                        </a>
+                        <!-- Sub Menu -->
+                        <ul class="nav sub-menu">
+                            <li class="{{Request::is('admin/business/configuration/notification*') ? 'active open' : ''}}">
+                                <a href="{{route('admin.business.configuration.notification.index')}}">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('Notification')}}
+                                </a>
+                            </li>
+                            <li class="{{Request::is('admin/business/configuration/third-party/*') ? 'active open' : ''}}">
+                                <a href="{{route('admin.business.configuration.third-party.payment-method.index')}}"
+                                   class="text-capitalize">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('3rd_party')}}
+                                </a>
+                            </li>
+
+                        </ul>
+                        <!-- End Sub Menu -->
+                    </li>
+                    <li class="has-sub-item
+                {{Request::is('admin/business/environment-setup*') ||Request::is('admin/business/app-version-setup*') ||
+                    Request::is('admin/business/clean-database*') || Request::is('admin/business/languages*')? 'active sub-menu-opened' : ''}}">
+                        <a href="#">
+                            <i class="bi bi-sliders2-vertical"></i>
+                            <span class="link-title text-capitalize">{{translate('system_settings')}}</span>
+                        </a>
+                        <!-- Sub Menu -->
+                        <ul class="nav sub-menu">
+                            <li class="{{Request::is('admin/business/environment-setup*') ? 'active open' : ''}}">
+                                <a href="{{route('admin.business.environment-setup.index')}}" class="text-capitalize">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('environment_setup')}}
+                                </a>
+                            </li>
+                            <li class="{{Request::is('admin/business/app-version-setup*') ? 'active open' : ''}}">
+                                <a href="{{route('admin.business.app-version-setup.index')}}" class="text-capitalize">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('app_version_setup')}}
+                                </a>
+                            </li>
+                            <li class="{{Request::is('admin/business/clean-database*') ? 'active open' : ''}}">
+                                <a href="{{route('admin.business.clean-database.index')}}" class="text-capitalize">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('clean_database')}}
+                                </a>
+                            </li>
+                            <li class="{{Request::is('admin/business/languages*') ? 'active open' : ''}}">
+                                <a href="{{route('admin.business.languages.index')}}">
+                                    <i class="bi bi-dash-lg"></i>
+                                    {{translate('languages')}}
+                                </a>
+                            </li>
+                        </ul>
+                        <!-- End Sub Menu -->
+                    </li>
+                    <!---------- End Business Management --------------->
+                @endif
+
+                {{-- ── Part E: AI Section (super-admin only) ───────────────── --}}
+                @can('super-admin')
+                <li class="nav-category">{{ translate('AI') }}</li>
+                <li class="{{ Request::is('admin/ai*') ? 'active open' : '' }}">
+                    <a href="{{ route('admin.ai.settings') }}">
+                        <i class="bi bi-cpu-fill" style="color:#CC0000;"></i>
+                        <span class="link-title text-capitalize">{{ translate('AI') }}</span>
+                    </a>
+                </li>
+                @endcan
+                {{-- ── End AI ──────────────────────────────────────────────── --}}
+            </ul>
+            <!-- End Nav -->
+        </div>
     </div>
 </aside>
