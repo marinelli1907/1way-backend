@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ActivityLogController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
@@ -69,6 +70,17 @@ Route::get('/', 'index')->name('root');
         Route::get('get-notifications', 'getNotifications')->name('get-notifications');
         Route::get('get-safety-alert', 'getSafetyAlert')->name('get-safety-alert');
     });
+
+    // ── Part E: AI Section ───────────────────────────────────────────────────
+    Route::prefix('ai')->name('ai.')->controller(AiController::class)->group(function () {
+        Route::get('/',               'settings')->name('settings');
+        Route::post('/settings',      'saveSettings')->name('settings.save');
+        Route::get('/logs',           'logs')->name('logs');
+        Route::get('/tools',          'toolsView')->name('tools');
+        Route::post('/tools/suggest-zones',   'suggestZones')->name('tools.suggest-zones');
+        Route::post('/tools/suggest-pricing', 'suggestPricing')->name('tools.suggest-pricing');
+    });
+    // ── End AI ───────────────────────────────────────────────────────────────
 });
 Route::controller(SharedController::class)->group(function () {
     Route::get('lang/{locale}', 'lang')->name('lang');

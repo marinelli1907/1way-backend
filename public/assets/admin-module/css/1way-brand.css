@@ -1,0 +1,263 @@
+/*
+ * 1Way Admin — Brand Token Overrides
+ * ====================================
+ * Palette:
+ *   Primary (Red):     #CC0000  rgb(204, 0, 0)
+ *   Primary Dark:      #990000
+ *   Primary Light:     #FF3333
+ *   Base Dark (Navy):  #0A0E1A  rgb(10, 14, 26)
+ *   Surface:           #111827  (sidebar / cards bg)
+ *   Body BG:           #F5F6FA  (light page bg for readability)
+ *   Title (Dark):      #0A0E1A
+ *   Body Text:         #4B5563
+ *   Secondary Text:    #9CA3AF
+ *   Accent Border:     #E5E7EB
+ *
+ * All colour decisions are documented here — do NOT scatter colour
+ * values across other files. Use these CSS variables everywhere.
+ * ====================================
+ */
+
+/* ─── Light mode (default) ─── */
+:root {
+    /* Brand primaries */
+    --text-primary:               #CC0000;
+    --text-secondary:             #FFE5E5;
+    --bs-primary:                 #CC0000;
+    --bs-primary-rgb:             204, 0, 0;
+    --bs-secondary:               #FFE5E5;
+    --bs-secondary-rgb:           255, 229, 229;
+
+    /* Backgrounds */
+    --bs-body-bg:                 #F5F6FA;
+    --bs-body-bg-rgb:             245, 246, 250;
+
+    /* Borders */
+    --input-border-color:         #E5E7EB;
+    --input-border-color-active:  #CC0000;
+    --bs-border-color:            #E5E7EB;
+    --bs-border-rgb:              229, 231, 235;
+
+    /* Input backgrounds */
+    --input-bg:                   #F9FAFB;
+    --disable-input-bg:           #E9ECEF;
+
+    /* Title / heading colour */
+    --title-color:                #0A0E1A;
+    --title-color-rgb:            10, 14, 26;
+    --absolute-dark:              #0A0E1A;
+
+    /* Body text */
+    --bs-body-color:              #4B5563;
+    --secondary-body-color:       #9CA3AF;
+
+    /* Bootstrap semantic colours — keep contrast compliant */
+    --bs-danger:                  #DC2626;
+    --bs-danger-rgb:              220, 38, 38;
+    --bs-success:                 #16A34A;
+    --bs-success-rgb:             22, 163, 74;
+    --bs-info:                    #0284C7;
+    --bs-info-rgb:                2, 132, 199;
+    --bs-warning:                 #D97706;
+    --bs-warning-rgb:             217, 119, 6;
+    --bs-dark:                    #0A0E1A;
+    --bs-dark-rgb:                10, 14, 26;
+    --bs-light:                   #F5F6FA;
+    --bs-light-rgb:               245, 246, 250;
+
+    /* Shadow */
+    --shadow-color:               rgba(10, 14, 26, 0.08);
+    --dropdown-box-shadow:        rgba(10, 14, 26, 0.12) 0px 4px 16px 0px;
+}
+
+/* ─── Dark mode overrides ─── */
+[theme="dark"] {
+    --bs-body-bg:                 #0A0E1A;
+    --bs-body-bg-rgb:             10, 14, 26;
+    --bs-border-color:            #1F2937;
+    --bs-border-rgb:              31, 41, 55;
+    --title-color:                rgba(255, 255, 255, 0.92);
+    --title-color-rgb:            255, 255, 255;
+    --absolute-white:             rgba(255, 255, 255, 0.92);
+    --bs-body-color:              #D1D5DB;
+    --secondary-body-color:       #6B7280;
+    --input-bg:                   #1F2937;
+    --disable-input-bg:           #374151;
+    --input-border-color-active:  #CC0000;
+    --dropdown-box-shadow:        rgba(0, 0, 0, 0.4) 0px 4px 24px 0px;
+}
+
+/* ─── Sidebar / Aside ─── */
+.aside-menu,
+.sidebar-menu,
+#sidebarMenu,
+.aside {
+    background-color: #0A0E1A !important;
+    border-right: 1px solid #1F2937;
+}
+
+.aside .nav-link,
+.aside-menu .nav-link,
+.sidebar-menu .nav-link {
+    color: #D1D5DB;
+}
+
+.aside .nav-link:hover,
+.aside .nav-link.active,
+.aside-menu .nav-link:hover,
+.aside-menu .nav-link.active {
+    color: #ffffff;
+    background-color: rgba(204, 0, 0, 0.15);
+}
+
+.aside .nav-link.active {
+    border-left: 3px solid #CC0000;
+    color: #ffffff !important;
+}
+
+/* ─── Header / Topbar ─── */
+.header,
+.topbar,
+#header {
+    background-color: #ffffff;
+    border-bottom: 2px solid #CC0000;
+}
+
+/* ─── Buttons ─── */
+.btn-primary {
+    background-color: #CC0000 !important;
+    border-color: #CC0000 !important;
+    color: #ffffff !important;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+    background-color: #990000 !important;
+    border-color: #990000 !important;
+}
+
+.btn-outline-primary {
+    color: #CC0000 !important;
+    border-color: #CC0000 !important;
+}
+
+.btn-outline-primary:hover {
+    background-color: #CC0000 !important;
+    color: #ffffff !important;
+}
+
+/* ─── Badges ─── */
+.badge.bg-primary,
+.badge-primary {
+    background-color: #CC0000 !important;
+    color: #ffffff !important;
+}
+
+.badge.bg-secondary,
+.badge-secondary {
+    background-color: #FFE5E5 !important;
+    color: #CC0000 !important;
+}
+
+/* ─── Links & Accent Text ─── */
+a {
+    color: #CC0000;
+}
+
+a:hover {
+    color: #990000;
+}
+
+.text-primary {
+    color: #CC0000 !important;
+}
+
+.bg-primary {
+    background-color: #CC0000 !important;
+}
+
+/* ─── Nav Tabs ─── */
+.nav-tabs .nav-link.active,
+.nav-tabs .nav-item.show .nav-link {
+    color: #CC0000;
+    border-bottom: 2px solid #CC0000;
+}
+
+.nav-tabs .nav-link:hover {
+    color: #CC0000;
+}
+
+/* ─── Form Controls ─── */
+.form-control:focus,
+.form-select:focus {
+    border-color: #CC0000;
+    box-shadow: 0 0 0 0.2rem rgba(204, 0, 0, 0.15);
+}
+
+/* ─── Cards ─── */
+.card {
+    border: 1px solid var(--bs-border-color);
+    box-shadow: 0 1px 4px var(--shadow-color);
+}
+
+.card-header {
+    border-bottom: 2px solid #CC0000;
+    font-weight: 600;
+}
+
+/* ─── Tables ─── */
+.table thead th {
+    background-color: #0A0E1A;
+    color: #ffffff;
+    font-weight: 600;
+    border-color: #1F2937;
+}
+
+/* ─── Pagination ─── */
+.page-link {
+    color: #CC0000;
+}
+
+.page-item.active .page-link {
+    background-color: #CC0000;
+    border-color: #CC0000;
+    color: #ffffff;
+}
+
+/* ─── Toggle / Switch ─── */
+.form-check-input:checked {
+    background-color: #CC0000;
+    border-color: #CC0000;
+}
+
+/* ─── Preloader ─── */
+.spinner-grow {
+    color: #CC0000;
+}
+
+/* ─── Toastr accent ─── */
+.toast-success { background-color: #16A34A !important; }
+.toast-error   { background-color: #CC0000 !important; }
+.toast-warning { background-color: #D97706 !important; }
+.toast-info    { background-color: #0284C7 !important; }
+
+/* ─── Preloader brand colour ─── */
+.preloader .spinner-grow {
+    color: #CC0000;
+}
+
+/* ─── Select2 ─── */
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+    background-color: #CC0000;
+}
+
+.select2-container--default .select2-selection--single:focus,
+.select2-container--default.select2-container--focus .select2-selection--multiple {
+    border-color: #CC0000 !important;
+    box-shadow: 0 0 0 0.2rem rgba(204, 0, 0, 0.15);
+}
+
+/* ─── Progress bars ─── */
+.progress-bar {
+    background-color: #CC0000;
+}

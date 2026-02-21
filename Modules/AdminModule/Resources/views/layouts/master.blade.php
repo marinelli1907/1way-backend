@@ -40,6 +40,8 @@
 
     {{-- 1Way Theme --}}
     <link rel="stylesheet" href="{{ asset('assets/1way/1way-admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('assets/admin-module/css/1way-brand.css') }}"/>
+    @include('adminmodule::layouts.css')
 
     @stack('css_or_js')
 </head>
