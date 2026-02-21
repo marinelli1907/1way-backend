@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\ZoneManagement\Http\Controllers\Web\New\Admin\ZoneController;
+use Modules\ZoneManagement\Http\Controllers\Web\New\Admin\ZoneGeoJsonController;
 
 //New Route Mamun
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], function () {
@@ -27,6 +28,15 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
                 Route::get('status', 'statusExtraFare')->name('status');
             });
         });
+
+        // ── Part B: GeoJSON import/export ─────────────────────────────────
+        Route::controller(ZoneGeoJsonController::class)->group(function () {
+            Route::get('geojson-import',        'importForm')->name('geojson-import');
+            Route::post('geojson-import',        'import')->name('geojson-import.store');
+            Route::get('{id}/export-geojson',    'export')->name('export-geojson');
+            Route::get('export-all-geojson',     'exportAll')->name('geojson-export-all');
+        });
+        // ── End GeoJSON ──────────────────────────────────────────────────
 
     });
 });

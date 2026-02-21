@@ -33,6 +33,8 @@ class Zone extends Model
         'extra_fare_status',
         'extra_fare_fee',
         'extra_fare_reason',
+        'pricing_multiplier',
+        'description',
         'deleted_at',
         'created_at',
         'updated_at',
@@ -44,10 +46,11 @@ class Zone extends Model
      * @var array
      */
     protected $casts = [
-        'readable_id'=> 'integer',
-        'is_active' => 'boolean',
-        'extra_fare_status' => 'boolean',
-        'coordinates' => Polygon::class
+        'readable_id'        => 'integer',
+        'is_active'          => 'boolean',
+        'extra_fare_status'  => 'boolean',
+        'pricing_multiplier' => 'decimal:4',
+        'coordinates'        => Polygon::class,
     ];
 
     /**

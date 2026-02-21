@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\ZoneManagement\Http\Controllers\Api\New\Driver\ZoneController;
+use Modules\ZoneManagement\Http\Controllers\Api\ZonePointController;
 
 /*
 |--------------------------------------------------------------------------
@@ -21,5 +22,13 @@ Route::group(['prefix' => 'driver'], function () {
         Route::controller(ZoneController::class)->group(function () {
             Route::get('/list', 'list');
         });
+    });
+});
+
+// ── Part B: Point-in-Polygon API (auth:api required) ─────────────────────────
+Route::group(['prefix' => 'zone', 'middleware' => ['auth:api', 'maintenance_mode']], function () {
+    Route::controller(ZonePointController::class)->group(function () {
+        Route::post('point-in-zone',  'pointInZone');   // POST /api/zone/point-in-zone
+        Route::post('trip-zones',     'tripZones');     // POST /api/zone/trip-zones
     });
 });
