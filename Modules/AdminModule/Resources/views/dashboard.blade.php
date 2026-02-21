@@ -21,8 +21,6 @@
         </div>
     </div>
 
-    @can('dashboard')
-
     {{-- KPI ROW --}}
     <div class="row g-3 mb-4">
 
@@ -188,7 +186,6 @@
 
     </div>
 
-    @endcan
 </div>
 
 @endsection

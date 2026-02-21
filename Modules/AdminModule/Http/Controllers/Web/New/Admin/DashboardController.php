@@ -68,41 +68,46 @@ class DashboardController extends BaseController
 
     public function index(?Request $request, string $type = null): View|Collection|LengthAwarePaginator|null|callable|RedirectResponse
     {
-        $zones = $this->zoneService->getBy(criteria: [
-            'is_active' => 1
-        ]);
+        // Wrap all data queries — if any fail (e.g. spatial query errors, missing tables)
+        // we still render the dashboard with zeroed-out safe defaults instead of a blank screen.
+        try {
+            $zones = $this->zoneService->getBy(criteria: ['is_active' => 1]);
+        } catch (\Throwable $e) {
+            \Log::warning('Dashboard: zones query failed — ' . $e->getMessage());
+            $zones = collect();
+        }
 
-        $totalTripsEarningCriteria = [
-            'type' => RIDE_REQUEST,
-            'payment_status' => PAID
-        ];
-        $totalParcelsEarningCriteria = [
-            'type' => PARCEL,
-            'payment_status' => PAID
-        ];
-        $whereHasRelations = [];
+        try {
+            $whereHasRelations['fee'] = function ($query) {
+                $query->whereNull('cancelled_by')
+                    ->orWhere('cancelled_by', '=', 'CUSTOMER');
+            };
+            $transactions          = $this->transactionService->getBy(criteria: ['user_id' => auth()->id()], orderBy: ['created_at' => 'desc'])->take(7);
+            $superAdmin            = $this->employeeService->findOneBy(criteria: ['user_type' => 'super-admin']);
+            $superAdminAccount     = $this->userAccountService->findOneBy(criteria: ['user_id' => $superAdmin?->id]);
+            $customers             = $this->customerService->getBy(criteria: ['user_type' => CUSTOMER, 'is_active' => true])->count();
+            $drivers               = $this->driverService->getBy(criteria: ['user_type' => DRIVER, 'is_active' => true])->count();
+            $totalCouponAmountGiven    = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID])->sum('coupon_amount');
+            $totalDiscountAmountGiven  = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID])->sum('discount_amount');
+            $totalTrips            = $this->tripRequestService->getBy(criteria: ['type' => RIDE_REQUEST])->count();
+            $totalParcels          = $this->tripRequestService->getBy(criteria: ['type' => PARCEL])->count();
+            $totalEarning          = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID], whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+            $totalTripsEarning     = $this->tripRequestService->getBy(criteria: ['type' => RIDE_REQUEST, 'payment_status' => PAID], whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+            $totalParcelsEarning   = $this->tripRequestService->getBy(criteria: ['type' => PARCEL, 'payment_status' => PAID], whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
+        } catch (\Throwable $e) {
+            \Log::warning('Dashboard: KPI queries failed — ' . $e->getMessage());
+            $transactions = collect();
+            $superAdminAccount = null;
+            $customers = $drivers = $totalTrips = $totalParcels = 0;
+            $totalEarning = $totalTripsEarning = $totalParcelsEarning = 0;
+            $totalCouponAmountGiven = $totalDiscountAmountGiven = 0;
+        }
 
-        // Add criteria for the `fee` relationship to filter by `cancelled_by` being either `null` or `CUSTOMER`
-        $whereHasRelations['fee'] = function ($query) {
-            $query->whereNull('cancelled_by')
-                ->orWhere('cancelled_by', '=', 'CUSTOMER'); // Handle `null` or `CUSTOMER`
-        };
-        $transactions = $this->transactionService->getBy(criteria: ['user_id' => \auth()->user()->id], orderBy: ['created_at' => 'desc'])->take(7);
-        $superAdmin = $this->employeeService->findOneBy(criteria: ['user_type' => 'super-admin']);
-        $superAdminAccount = $this->userAccountService->findOneBy(criteria: ['user_id' => $superAdmin?->id]);
-        $customers = $this->customerService->getBy(criteria: ['user_type' => CUSTOMER, 'is_active' => true])->count();
-        $drivers = $this->driverService->getBy(criteria: ['user_type' => DRIVER, 'is_active' => true])->count();
-        $totalCouponAmountGiven = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID])->SUM('coupon_amount');
-        $totalDiscountAmountGiven = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID])->SUM('discount_amount');
-        $totalTrips = $this->tripRequestService->getBy(criteria: ['type' => RIDE_REQUEST])->count();
-        $totalParcels = $this->tripRequestService->getBy(criteria: ['type' => PARCEL])->count();
-        $totalEarning = $this->tripRequestService->getBy(criteria: ['payment_status' => PAID], whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
-        $totalTripsEarning = $this->tripRequestService->getBy(criteria: $totalTripsEarningCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
-        $totalParcelsEarning = $this->tripRequestService->getBy(criteria: $totalParcelsEarningCriteria, whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
-
-
-        return view('adminmodule::dashboard', compact('zones', 'transactions', 'superAdminAccount', 'customers',
-            'drivers', 'totalDiscountAmountGiven', 'totalCouponAmountGiven', 'totalTrips', 'totalParcels', 'totalEarning', 'totalTripsEarning', 'totalParcelsEarning'));
+        return view('adminmodule::dashboard', compact(
+            'zones', 'transactions', 'superAdminAccount', 'customers',
+            'drivers', 'totalDiscountAmountGiven', 'totalCouponAmountGiven',
+            'totalTrips', 'totalParcels', 'totalEarning', 'totalTripsEarning', 'totalParcelsEarning'
+        ));
     }
 
     public function recentTripActivity()
