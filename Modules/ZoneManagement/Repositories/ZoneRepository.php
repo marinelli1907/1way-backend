@@ -79,7 +79,7 @@ class ZoneRepository implements ZoneInterface
     public function getBy(string $column, string|int $value, array $attributes = []): mixed
     {
         return $this->zone
-            ->selectRaw("*,ST_AsText(ST_Centroid(`coordinates`)) as center")
+            ->selectRaw("*,ST_AsText(ST_Centroid(ST_GeomFromText(ST_AsText(`coordinates`), 0))) as center")
             ->where([$column => $value])
             ->when(array_key_exists('relations', $attributes), function ($query) use ($attributes) {
                 $query->with($attributes['relations']);
