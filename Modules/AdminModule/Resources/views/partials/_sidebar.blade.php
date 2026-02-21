@@ -458,14 +458,6 @@
             'patterns' => ['admin/system/maintenance*','admin/maintenance*']
         ]))
 
-                    <!-- Sub Menu -->
-                        <!-- End Sub Menu -->
-                    </li>
-                    <!-- DParcel Attribute Setup-->
-
-                    <!---------- End Parcel Management --------------->
-                @endif
-
                 @if(\Illuminate\Support\Facades\Gate::any(['vehicle_view', 'vehicle_add', 'vehicle_edit', 'vehicle_delete', 'vehicle_log', 'vehicle_export']))
                     <!---------- Start Vehicle Management --------------->
 
