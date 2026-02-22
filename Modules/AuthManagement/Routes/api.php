@@ -39,6 +39,7 @@ Route::controller(\Modules\AuthManagement\Http\Controllers\Api\New\AuthControlle
     });
 
     Route::group(['prefix' => 'user', 'middleware' => ['auth:api', 'maintenance_mode']], function () {
+        Route::get('profile', 'profile')->name('user-profile');
         Route::post('logout', 'logout')->name('logout');
         Route::post('delete', 'delete')->name('delete');
         Route::post('change-password', 'changePassword');

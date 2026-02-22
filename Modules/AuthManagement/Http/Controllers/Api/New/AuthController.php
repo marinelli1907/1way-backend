@@ -17,6 +17,8 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Modules\AuthManagement\Http\Requests\AuthApiRequest;
 use Modules\AuthManagement\Service\Interface\AuthServiceInterface;
+use Modules\UserManagement\Http\Controllers\Api\New\Customer\CustomerController;
+use Modules\UserManagement\Http\Controllers\Api\New\Driver\DriverController;
 use Modules\TransactionManagement\Traits\TransactionTrait;
 use Modules\TripManagement\Interfaces\TripRequestInterfaces;
 use Modules\UserManagement\Service\Interface\CustomerAccountServiceInterface;
@@ -263,6 +265,22 @@ class AuthController extends Controller
         }
 
         return response()->json(responseFormatter(AUTH_LOGIN_401), 403);
+    }
+
+    /**
+     * Unified profile for Rider/Driver apps that call GET /user/profile.
+     * Delegates to customer/info or driver/info based on user_type.
+     */
+    public function profile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        if ($user->user_type === CUSTOMER) {
+            return app(CustomerController::class)->profileInfo($request);
+        }
+        if ($user->user_type === DRIVER) {
+            return app(DriverController::class)->profileInfo($request);
+        }
+        return response()->json(responseFormatter(DEFAULT_401), 401);
     }
 
     public function logout(): JsonResponse
