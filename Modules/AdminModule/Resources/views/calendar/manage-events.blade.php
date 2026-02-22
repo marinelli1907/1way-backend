@@ -85,12 +85,12 @@
         </div>
     </div>
 
-    {{-- COMING SOON NOTICE --}}
+    {{-- INFO: Event creation form in a future release --}}
     <div class="card oneway-card mt-4 border-info">
         <div class="card-body text-center py-5">
             <i class="bi bi-tools fs-1 text-info d-block mb-3"></i>
-            <h5 class="fw-bold mb-2">Event Creation Coming Soon</h5>
-            <p class="text-muted mb-4">Full event creation and management features are being developed. For now, you can view scheduled trips in the Events List.</p>
+            <h5 class="fw-bold mb-2">Event creation</h5>
+            <p class="text-muted mb-4">Create and manage events in a future release. For now, view scheduled trips in the Events List.</p>
             <a href="{{ route('admin.events.index') }}" class="btn btn-primary">
                 <i class="bi bi-arrow-left"></i> View Events List
             </a>
