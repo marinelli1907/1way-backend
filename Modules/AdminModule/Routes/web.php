@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ActivityLogController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\CalendarEventsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\OpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SettingController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SharedController;
@@ -57,6 +59,25 @@ Route::get('/', 'index')->name('root');
         Route::get('search-saved-topic-answers', 'searchSavedTopicAnswer')->name('search-saved-topic-answers');
         Route::put('create-channel-with-admin', 'createChannelWithAdmin')->name('create-channel-with-admin');
     });
+    // ── Ops: Live KPIs, Alerts, Control Room, Cancellations, Support ───────────
+    Route::controller(OpsController::class)->group(function () {
+        Route::get('kpis',                  'kpis')->name('kpis.index');
+        Route::get('alerts',                'alerts')->name('alerts.index');
+        Route::get('control-room',          'controlRoom')->name('control-room.index');
+        Route::get('cancellations',         'cancellations')->name('cancellations.index');
+        Route::get('support/tickets',       'supportTickets')->name('support.tickets.index');
+    });
+
+    // ── Calendar & Events ────────────────────────────────────────────────────
+    Route::controller(CalendarEventsController::class)->group(function () {
+        Route::get('calendar',              'calendar')->name('calendar.index');
+        Route::get('events',                'events')->name('events.index');
+        Route::get('events/manage',         'manageEvents')->name('events.manage');
+        Route::get('event-ride-planner',    'eventRidePlanner')->name('event-ride-planner.index');
+        Route::get('venues',                'venues')->name('venues.index');
+        Route::get('event-analytics',       'eventAnalytics')->name('event-analytics.index');
+    });
+
     Route::controller(ActivityLogController::class)->group(function () {
         Route::get('log', 'log')->name('log');
     });
