@@ -5,6 +5,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\ActivityLogController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\CalendarEventsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\GenericAdminController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\OpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SettingController;
@@ -77,6 +78,66 @@ Route::get('/', 'index')->name('root');
         Route::get('venues',                'venues')->name('venues.index');
         Route::get('event-analytics',       'eventAnalytics')->name('event-analytics.index');
     });
+
+    // ── Promotions & Partners (stub pages) ──────────────────────────────────
+    Route::controller(GenericAdminController::class)->group(function () {
+        Route::get('businesses',         'businesses')->name('businesses.index');
+        Route::get('promoted-listings',  'promotedListings')->name('promoted-listings.index');
+        Route::get('ride-incentives',    'rideIncentives')->name('ride-incentives.index');
+        Route::get('promo-performance',  'promoPerformance')->name('promo-performance.index');
+        Route::get('payout-rules',       'payoutRules')->name('payout-rules.index');
+
+        // ── Users ────────────────────────────────────────────────────────────
+        Route::get('reviews',            'reviews')->name('reviews.index');
+
+        // ── Driver Ops ───────────────────────────────────────────────────────
+        Route::get('driver-applications','driverApplications')->name('driver-applications.index');
+        Route::get('driver-documents',   'driverDocuments')->name('driver-documents.index');
+        Route::get('driver-payout-splits','driverPayoutSplits')->name('driver-payout-splits.index');
+        Route::get('driver-availability','driverAvailability')->name('driver-availability.index');
+        Route::get('driver-performance', 'driverPerformance')->name('driver-performance.index');
+
+        // ── Payments & Finance (stubs) ───────────────────────────────────────
+        Route::get('cash-collect',       'cashCollect')->name('cash-collect.index');
+        Route::get('refunds',            'refunds')->name('refunds.index');
+        Route::get('commissions',        'commissions')->name('commissions.index');
+        Route::get('revenue-reports',    'revenueReports')->name('revenue-reports.index');
+
+        // ── Business Center (stubs) ──────────────────────────────────────────
+        Route::get('taxes-fees',         'taxesFees')->name('taxes-fees.index');
+        Route::get('invoices',           'invoices')->name('invoices.index');
+        Route::get('subscriptions',      'subscriptions')->name('subscriptions.index');
+
+        // ── AI Center ────────────────────────────────────────────────────────
+        Route::get('ai/assistant',       'aiAssistant')->name('ai.assistant.index');
+        Route::get('ai/fraud',           'aiFraud')->name('ai.fraud.index');
+        Route::get('ai/pricing',         'aiPricing')->name('ai.pricing.index');
+        Route::get('ai/supply',          'aiSupply')->name('ai.supply.index');
+        Route::get('ai/promo',           'aiPromo')->name('ai.promo.index');
+        Route::get('ai/autoreplies',     'aiAutoreplies')->name('ai.autoreplies.index');
+
+        // ── System (stubs) ────────────────────────────────────────────────────
+        Route::get('system/api-keys',    'apiKeys')->name('system.api-keys.index');
+        Route::get('system/backups',     'backups')->name('system.backups.index');
+    });
+
+    // ── Alias routes: redirect to existing real pages ────────────────────────
+    // Users
+    Route::get('roles', fn() => redirect()->route('admin.employee.role.index'))->name('roles.index');
+    // Driver Ops
+    Route::get('driver-tiers', fn() => redirect()->route('admin.driver.level.index'))->name('driver-tiers.index');
+    // Payments & Finance
+    Route::get('withdraw',     fn() => redirect()->route('admin.driver.withdraw.requests'))->name('withdraw.index');
+    Route::get('coupon',       fn() => redirect()->route('admin.promotion.coupon-setup.index'))->name('coupon.index');
+    // Business Center
+    Route::get('business-settings', fn() => redirect()->route('admin.business.setup.info.settings'))->name('business-settings.index');
+    Route::get('pricing-rules',     fn() => redirect()->route('admin.business.setup.trip-fare.trips'))->name('pricing-rules.index');
+    Route::get('audit-logs',        fn() => redirect()->route('admin.log'))->name('audit-logs.index');
+    // System (alias to existing Business config pages)
+    Route::get('system/config',         fn() => redirect()->route('admin.business.environment-setup.index'))->name('system.config.index');
+    Route::get('system/notifications',  fn() => redirect()->route('admin.business.configuration.notification.index'))->name('system.notifications.index');
+    Route::get('system/integrations',   fn() => redirect()->route('admin.business.configuration.third-party.payment-method.index'))->name('system.integrations.index');
+    Route::get('system/maintenance',    fn() => redirect()->route('admin.business.setup.info.maintenance'))->name('system.maintenance.index');
 
     Route::controller(ActivityLogController::class)->group(function () {
         Route::get('log', 'log')->name('log');
