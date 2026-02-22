@@ -6,6 +6,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PlaceholderController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\StubOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SettingController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SharedController;
@@ -104,55 +105,56 @@ Route::get('/', 'index')->name('root');
         Route::get('event-analytics', 'eventAnalytics')->name('event-analytics.index');
     });
 
-    // Promotions & Partners
-    Route::get('businesses',          [PlaceholderController::class, 'show'])->name('businesses.index');
-    Route::get('promoted-listings',   [PlaceholderController::class, 'show'])->name('promoted-listings.index');
-    Route::get('ride-incentives',     [PlaceholderController::class, 'show'])->name('ride-incentives.index');
-    Route::get('promo-performance',   [PlaceholderController::class, 'show'])->name('promo-performance.index');
-    Route::get('payout-rules',        [PlaceholderController::class, 'show'])->name('payout-rules.index');
+    // Promotions & Partners — real ops pages (no Coming Soon)
+    Route::get('businesses',          [StubOpsController::class, 'businesses'])->name('businesses.index');
+    Route::get('promoted-listings',   [StubOpsController::class, 'promotedListings'])->name('promoted-listings.index');
+    Route::get('ride-incentives',     [StubOpsController::class, 'rideIncentives'])->name('ride-incentives.index');
+    Route::get('promo-performance',   [StubOpsController::class, 'promoPerformance'])->name('promo-performance.index');
+    Route::get('payout-rules',        [StubOpsController::class, 'payoutRules'])->name('payout-rules.index');
 
     // Users
-    Route::get('roles',               [PlaceholderController::class, 'show'])->name('roles.index');
-    Route::get('reviews',             [PlaceholderController::class, 'show'])->name('reviews.index');
+    Route::get('roles',               [StubOpsController::class, 'roles'])->name('roles.index');
+    Route::get('reviews',             [StubOpsController::class, 'reviews'])->name('reviews.index');
 
     // Driver Ops
-    Route::get('driver-applications', [PlaceholderController::class, 'show'])->name('driver-applications.index');
-    Route::get('driver-documents',    [PlaceholderController::class, 'show'])->name('driver-documents.index');
-    Route::get('driver-payout-splits',[PlaceholderController::class, 'show'])->name('driver-payout-splits.index');
-    Route::get('driver-tiers',        [PlaceholderController::class, 'show'])->name('driver-tiers.index');
-    Route::get('driver-availability', [PlaceholderController::class, 'show'])->name('driver-availability.index');
-    Route::get('driver-performance',  [PlaceholderController::class, 'show'])->name('driver-performance.index');
+    Route::get('driver-applications', [StubOpsController::class, 'driverApplications'])->name('driver-applications.index');
+    Route::get('driver-documents',    [StubOpsController::class, 'driverDocuments'])->name('driver-documents.index');
+    Route::get('driver-payout-splits',[StubOpsController::class, 'driverPayoutSplits'])->name('driver-payout-splits.index');
+    Route::get('driver-tiers',        [StubOpsController::class, 'driverTiers'])->name('driver-tiers.index');
+    Route::get('driver-availability', [StubOpsController::class, 'driverAvailability'])->name('driver-availability.index');
+    Route::get('driver-performance',  [StubOpsController::class, 'driverPerformance'])->name('driver-performance.index');
 
-    // Payments & Finance
-    Route::get('cash-collect',        [PlaceholderController::class, 'show'])->name('cash-collect.index');
-    Route::get('refunds',             [PlaceholderController::class, 'show'])->name('refunds.index');
-    Route::get('commissions',         [PlaceholderController::class, 'show'])->name('commissions.index');
-    Route::get('revenue-reports',     [PlaceholderController::class, 'show'])->name('revenue-reports.index');
+    // Payments & Finance (incl. withdraw + coupon so sidebar route names exist)
+    Route::get('withdraw',            [StubOpsController::class, 'withdraw'])->name('withdraw.index');
+    Route::get('cash-collect',        [StubOpsController::class, 'cashCollect'])->name('cash-collect.index');
+    Route::get('refunds',             [StubOpsController::class, 'refunds'])->name('refunds.index');
+    Route::get('commissions',         [StubOpsController::class, 'commissions'])->name('commissions.index');
+    Route::get('coupon',              [StubOpsController::class, 'coupon'])->name('coupon.index');
+    Route::get('revenue-reports',     [StubOpsController::class, 'revenueReports'])->name('revenue-reports.index');
 
     // Business Center
-    Route::get('business-settings',   [PlaceholderController::class, 'show'])->name('business-settings.index');
-    Route::get('pricing-rules',       [PlaceholderController::class, 'show'])->name('pricing-rules.index');
-    Route::get('taxes-fees',          [PlaceholderController::class, 'show'])->name('taxes-fees.index');
-    Route::get('invoices',            [PlaceholderController::class, 'show'])->name('invoices.index');
-    Route::get('subscriptions',       [PlaceholderController::class, 'show'])->name('subscriptions.index');
-    Route::get('audit-logs',          [PlaceholderController::class, 'show'])->name('audit-logs.index');
+    Route::get('business-settings',   [StubOpsController::class, 'businessSettings'])->name('business-settings.index');
+    Route::get('pricing-rules',       [StubOpsController::class, 'pricingRules'])->name('pricing-rules.index');
+    Route::get('taxes-fees',          [StubOpsController::class, 'taxesFees'])->name('taxes-fees.index');
+    Route::get('invoices',            [StubOpsController::class, 'invoices'])->name('invoices.index');
+    Route::get('subscriptions',       [StubOpsController::class, 'subscriptions'])->name('subscriptions.index');
+    Route::get('audit-logs',          [StubOpsController::class, 'auditLogs'])->name('audit-logs.index');
 
-    // AI Center sidebar items (distinct from the built AI routes above)
-    Route::get('ai/assistant',        [PlaceholderController::class, 'show'])->name('ai.assistant.index');
-    Route::get('ai/fraud',            [PlaceholderController::class, 'show'])->name('ai.fraud.index');
-    Route::get('ai/pricing',          [PlaceholderController::class, 'show'])->name('ai.pricing.index');
-    Route::get('ai/supply',           [PlaceholderController::class, 'show'])->name('ai.supply.index');
-    Route::get('ai/promo',            [PlaceholderController::class, 'show'])->name('ai.promo.index');
-    Route::get('ai/autoreplies',      [PlaceholderController::class, 'show'])->name('ai.autoreplies.index');
+    // AI Center sidebar items — real ops pages
+    Route::get('ai/assistant',        [StubOpsController::class, 'aiAssistant'])->name('ai.assistant.index');
+    Route::get('ai/fraud',            [StubOpsController::class, 'aiFraud'])->name('ai.fraud.index');
+    Route::get('ai/pricing',          [StubOpsController::class, 'aiPricing'])->name('ai.pricing.index');
+    Route::get('ai/supply',           [StubOpsController::class, 'aiSupply'])->name('ai.supply.index');
+    Route::get('ai/promo',            [StubOpsController::class, 'aiPromo'])->name('ai.promo.index');
+    Route::get('ai/autoreplies',      [StubOpsController::class, 'aiAutoreplies'])->name('ai.autoreplies.index');
 
     // System
-    Route::get('system/config',         [PlaceholderController::class, 'show'])->name('system.config.index');
-    Route::get('system/notifications',  [PlaceholderController::class, 'show'])->name('system.notifications.index');
-    Route::get('system/integrations',   [PlaceholderController::class, 'show'])->name('system.integrations.index');
-    Route::get('system/api-keys',       [PlaceholderController::class, 'show'])->name('system.api-keys.index');
-    Route::get('system/backups',        [PlaceholderController::class, 'show'])->name('system.backups.index');
-    Route::get('system/maintenance',    [PlaceholderController::class, 'show'])->name('system.maintenance.index');
-    // ── End placeholder routes ────────────────────────────────────────────────
+    Route::get('system/config',         [StubOpsController::class, 'systemConfig'])->name('system.config.index');
+    Route::get('system/notifications',  [StubOpsController::class, 'systemNotifications'])->name('system.notifications.index');
+    Route::get('system/integrations',   [StubOpsController::class, 'systemIntegrations'])->name('system.integrations.index');
+    Route::get('system/api-keys',       [StubOpsController::class, 'systemApiKeys'])->name('system.api-keys.index');
+    Route::get('system/backups',        [StubOpsController::class, 'systemBackups'])->name('system.backups.index');
+    Route::get('system/maintenance',    [StubOpsController::class, 'systemMaintenance'])->name('system.maintenance.index');
 });
 Route::controller(SharedController::class)->group(function () {
     Route::get('lang/{locale}', 'lang')->name('lang');
