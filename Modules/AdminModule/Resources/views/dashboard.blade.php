@@ -95,7 +95,7 @@
                     <div class="d-flex gap-2">
                         <select id="rideZone" class="form-select form-select-sm">
                             <option value="all">All Zones</option>
-                            @foreach($zones as $zone)
+                            @foreach(($zones ?? collect()) as $zone)
                                 <option value="{{ $zone->id }}">{{ $zone->name }}</option>
                             @endforeach
                         </select>
