@@ -10,6 +10,8 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SettingController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SharedController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FleetMapViewController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\OpsController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\CalendarEventsController;
 
 /*
 |--------------------------------------------------------------------------
@@ -83,23 +85,24 @@ Route::get('/', 'index')->name('root');
     });
     // ── End AI ───────────────────────────────────────────────────────────────
 
-    // ── Placeholder routes for sidebar items not yet fully implemented ────────
-    // Dashboard section
-    Route::get('kpis',   [PlaceholderController::class, 'show'])->name('kpis.index');
-    Route::get('alerts', [PlaceholderController::class, 'show'])->name('alerts.index');
+    // ── Dashboard & Operations ────────────────────────────────────────────────
+    Route::controller(OpsController::class)->group(function () {
+        Route::get('kpis', 'kpis')->name('kpis.index');
+        Route::get('alerts', 'alerts')->name('alerts.index');
+        Route::get('control-room', 'controlRoom')->name('control-room.index');
+        Route::get('cancellations', 'cancellations')->name('cancellations.index');
+        Route::get('support/tickets', 'supportTickets')->name('support.tickets.index');
+    });
 
-    // Operations
-    Route::get('control-room',   [PlaceholderController::class, 'show'])->name('control-room.index');
-    Route::get('cancellations',  [PlaceholderController::class, 'show'])->name('cancellations.index');
-    Route::get('support/tickets',[PlaceholderController::class, 'show'])->name('support.tickets.index');
-
-    // Calendar & Events
-    Route::get('calendar',            [PlaceholderController::class, 'show'])->name('calendar.index');
-    Route::get('events',              [PlaceholderController::class, 'show'])->name('events.index');
-    Route::get('events/manage',       [PlaceholderController::class, 'show'])->name('events.manage');
-    Route::get('event-ride-planner',  [PlaceholderController::class, 'show'])->name('event-ride-planner.index');
-    Route::get('venues',              [PlaceholderController::class, 'show'])->name('venues.index');
-    Route::get('event-analytics',     [PlaceholderController::class, 'show'])->name('event-analytics.index');
+    // ── Calendar & Events ──────────────────────────────────────────────────────
+    Route::controller(CalendarEventsController::class)->group(function () {
+        Route::get('calendar', 'calendar')->name('calendar.index');
+        Route::get('events', 'eventsList')->name('events.index');
+        Route::get('events/manage', 'manageEvents')->name('events.manage');
+        Route::get('event-ride-planner', 'eventRidePlanner')->name('event-ride-planner.index');
+        Route::get('venues', 'venues')->name('venues.index');
+        Route::get('event-analytics', 'eventAnalytics')->name('event-analytics.index');
+    });
 
     // Promotions & Partners
     Route::get('businesses',          [PlaceholderController::class, 'show'])->name('businesses.index');
