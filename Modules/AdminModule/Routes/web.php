@@ -6,6 +6,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PlaceholderController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\DriverOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PromotionsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\StubOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
@@ -118,12 +119,12 @@ Route::get('/', 'index')->name('root');
     Route::get('reviews',             [StubOpsController::class, 'reviews'])->name('reviews.index');
 
     // Driver Ops
-    Route::get('driver-applications', [StubOpsController::class, 'driverApplications'])->name('driver-applications.index');
-    Route::get('driver-documents',    [StubOpsController::class, 'driverDocuments'])->name('driver-documents.index');
-    Route::get('driver-payout-splits',[StubOpsController::class, 'driverPayoutSplits'])->name('driver-payout-splits.index');
-    Route::get('driver-tiers',        [StubOpsController::class, 'driverTiers'])->name('driver-tiers.index');
-    Route::get('driver-availability', [StubOpsController::class, 'driverAvailability'])->name('driver-availability.index');
-    Route::get('driver-performance',  [StubOpsController::class, 'driverPerformance'])->name('driver-performance.index');
+    Route::get('driver-applications', [DriverOpsController::class, 'driverApplications'])->name('driver-applications.index');
+    Route::get('driver-documents',    [DriverOpsController::class, 'driverDocuments'])->name('driver-documents.index');
+    Route::get('driver-payout-splits',[DriverOpsController::class, 'driverPayoutSplits'])->name('driver-payout-splits.index');
+    Route::get('driver-tiers',        [DriverOpsController::class, 'driverTiers'])->name('driver-tiers.index');
+    Route::get('driver-availability', [DriverOpsController::class, 'driverAvailability'])->name('driver-availability.index');
+    Route::get('driver-performance',  [DriverOpsController::class, 'driverPerformance'])->name('driver-performance.index');
 
     // Payments & Finance (incl. withdraw + coupon so sidebar route names exist)
     Route::get('withdraw',            [StubOpsController::class, 'withdraw'])->name('withdraw.index');
