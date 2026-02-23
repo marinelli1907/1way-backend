@@ -28,8 +28,8 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-car-front-fill text-warning"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $ongoingCount }}</div>
-                        <div class="oneway-kpi__label">Ongoing Trips</div>
+                        <div class="fw-bold fs-3">{{ $ongoingCount ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Active Trips</div>
                     </div>
                 </div>
             </div>
@@ -39,8 +39,19 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-hourglass-split text-info"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $pendingCount }}</div>
+                        <div class="fw-bold fs-3">{{ $pendingCount ?? 0 }}</div>
                         <div class="oneway-kpi__label">Pending Requests</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-calendar2-day text-secondary"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $scheduledTodayCount ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Scheduled Today</div>
                     </div>
                 </div>
             </div>
@@ -50,7 +61,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-wifi text-success"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $onlineDriverCount }}</div>
+                        <div class="fw-bold fs-3">{{ $onlineDriverCount ?? 0 }}</div>
                         <div class="oneway-kpi__label">Drivers Online</div>
                     </div>
                 </div>
@@ -61,7 +72,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-check-circle text-primary"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $availableDriverCount }}</div>
+                        <div class="fw-bold fs-3">{{ $availableDriverCount ?? 0 }}</div>
                         <div class="oneway-kpi__label">Available Now</div>
                     </div>
                 </div>
@@ -92,12 +103,12 @@
                                 @forelse($ongoingTrips as $trip)
                                 <tr>
                                     <td>
-                                        <a href="{{ route('admin.trip.details', $trip->id) }}" class="text-decoration-none">
+                                        <a href="{{ route('admin.trip.show', $trip->id) }}" class="text-decoration-none">
                                             {{ Str::limit($trip->ref_id ?? $trip->id, 10, '') }}
                                         </a>
                                     </td>
                                     <td>{{ $trip->customer?->first_name ?? '—' }} {{ $trip->customer?->last_name ?? '' }}</td>
-                                    <td>{{ $trip->driver?->first_name ?? '<span class="text-muted">Unassigned</span>' }}</td>
+                                    <td>{!! $trip->driver ? e($trip->driver->first_name ?? '') . ' ' . e($trip->driver->last_name ?? '') : '<span class="text-muted">Unassigned</span>' !!}</td>
                                     <td><span class="badge bg-warning">{{ ucfirst(str_replace('_',' ', $trip->current_status ?? '')) }}</span></td>
                                     <td class="small">{{ $trip->updated_at?->diffForHumans() ?? '—' }}</td>
                                 </tr>
@@ -133,7 +144,7 @@
                                 @forelse($pendingTrips as $trip)
                                 <tr>
                                     <td>
-                                        <a href="{{ route('admin.trip.details', $trip->id) }}" class="text-decoration-none">
+                                        <a href="{{ route('admin.trip.show', $trip->id) }}" class="text-decoration-none">
                                             {{ Str::limit($trip->ref_id ?? $trip->id, 10, '') }}
                                         </a>
                                     </td>
@@ -141,7 +152,7 @@
                                     <td class="small">{{ Str::limit($trip->pickup_address ?? '—', 30, '...') }}</td>
                                     <td class="small">{{ $trip->created_at?->diffForHumans() ?? '—' }}</td>
                                     <td>
-                                        <a href="{{ route('admin.trip.details', $trip->id) }}" class="btn btn-sm btn-primary">
+                                        <a href="{{ route('admin.trip.show', $trip->id) }}" class="btn btn-sm btn-primary">
                                             View
                                         </a>
                                     </td>
@@ -193,6 +204,48 @@
                         </tr>
                         @empty
                         <tr><td colspan="5" class="text-center text-muted py-4">No active drivers</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {{-- LAST 50 ACTIONS (recent trip updates) --}}
+    <div class="card oneway-card mt-4">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0 fw-semibold">Last 50 Actions</h5>
+            <div class="text-muted small">Most recently updated trips</div>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light sticky-top">
+                        <tr>
+                            <th>Trip ID</th>
+                            <th>Customer</th>
+                            <th>Driver</th>
+                            <th>Status</th>
+                            <th>Updated</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($recentActions ?? [] as $trip)
+                        <tr>
+                            <td>
+                                <a href="{{ route('admin.trip.show', $trip->id) }}" class="text-decoration-none">
+                                    {{ Str::limit($trip->ref_id ?? $trip->id, 10, '') }}
+                                </a>
+                            </td>
+                            <td>{{ $trip->customer?->first_name ?? '—' }} {{ $trip->customer?->last_name ?? '' }}</td>
+                            <td>{{ $trip->driver?->first_name ?? '—' }} {{ $trip->driver?->last_name ?? '' }}</td>
+                            <td><span class="badge bg-secondary">{{ ucfirst(str_replace('_',' ', $trip->current_status ?? '—')) }}</span></td>
+                            <td class="small">{{ $trip->updated_at?->diffForHumans() ?? '—' }}</td>
+                            <td><a href="{{ route('admin.trip.show', $trip->id) }}" class="btn btn-sm btn-outline-primary">View</a></td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="6" class="text-center text-muted py-4">No recent actions</td></tr>
                         @endforelse
                     </tbody>
                 </table>

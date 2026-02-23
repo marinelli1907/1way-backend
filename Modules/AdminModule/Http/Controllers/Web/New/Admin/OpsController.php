@@ -103,12 +103,16 @@ class OpsController extends Controller
 
         $ongoingCount = $this->safeCount(fn() => TripRequest::whereIn('current_status', ['accepted', 'ongoing', 'picking_up', 'reached'])->count());
         $pendingCount = $this->safeCount(fn() => TripRequest::where('current_status', 'pending')->count());
+        $scheduledTodayCount = $this->safeCount(fn() => TripRequest::where('current_status', 'scheduled')->whereDate('created_at', Carbon::today())->count());
         $onlineDriverCount = $this->safeCount(fn() => DriverDetail::where('is_online', true)->count());
         $availableDriverCount = $this->safeCount(fn() => DriverDetail::where('is_online', true)->where('availability_status', 'available')->count());
 
+        $recentActions = $this->safeQuery(fn() => TripRequest::with(['customer', 'driver'])
+            ->orderByDesc('updated_at')->limit(50)->get());
+
         return view('adminmodule::ops.control-room', compact(
-            'ongoingTrips', 'pendingTrips', 'activeDrivers',
-            'ongoingCount', 'pendingCount', 'onlineDriverCount', 'availableDriverCount'
+            'ongoingTrips', 'pendingTrips', 'activeDrivers', 'recentActions',
+            'ongoingCount', 'pendingCount', 'scheduledTodayCount', 'onlineDriverCount', 'availableDriverCount'
         ));
     }
 
