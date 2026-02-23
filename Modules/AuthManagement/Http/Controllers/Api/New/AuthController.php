@@ -208,8 +208,8 @@ class AuthController extends Controller
 
         $hit_limit = businessConfig('maximum_login_hit')?->value ?? 5;
         $block_time = businessConfig('temporary_login_block_time')?->value ?? 60;
-        $seconds_passed = Carbon::parse($user->blocked_at)->diffInSeconds();
-        if ($user->is_temp_blocked) {
+        if ($user->is_temp_blocked && $user->blocked_at) {
+            $seconds_passed = Carbon::parse($user->blocked_at)->diffInSeconds(now());
             if (isset($user->blocked_at) && Carbon::parse($user->blocked_at)->DiffInSeconds() <= $block_time) {
                 $time = $block_time - Carbon::parse($user->blocked_at)->DiffInSeconds();
                 return response()->json([
