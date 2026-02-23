@@ -9,6 +9,7 @@ use Modules\UserManagement\Http\Controllers\Api\Customer\CustomerController;
 use Modules\UserManagement\Http\Controllers\Api\Customer\LoyaltyPointController;
 use Modules\UserManagement\Http\Controllers\Api\Driver\TimeTrackController;
 use Modules\UserManagement\Http\Controllers\Api\New\Customer\WalletTransferController;
+use Modules\UserManagement\Http\Controllers\Api\New\Driver\DriverEarningsController;
 use Modules\UserManagement\Http\Controllers\Api\New\Driver\WithdrawController;
 use Modules\UserManagement\Http\Controllers\Api\New\Driver\WithdrawMethodInfoController;
 use Modules\UserManagement\Http\Controllers\Api\UserController;
@@ -110,6 +111,14 @@ Route::group(['prefix' => 'driver'], function () {
                 Route::post('update/{id}', 'update');
                 Route::post('delete/{id}', 'destroy');
             });
+        });
+        // Phase 4: driver app earnings/expenses/mileage (safe defaults, no schema)
+        Route::controller(DriverEarningsController::class)->group(function () {
+            Route::get('earnings', 'earnings');
+            Route::get('expenses', 'expenses');
+            Route::post('expenses', 'storeExpense');
+            Route::get('mileage', 'mileage');
+            Route::post('mileage', 'storeMileage');
         });
     });
 
