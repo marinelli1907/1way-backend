@@ -6,6 +6,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PlaceholderController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\BusinessCenterController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DriverOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PromotionsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\StubOpsController;
@@ -135,12 +136,12 @@ Route::get('/', 'index')->name('root');
     Route::get('revenue-reports',     [StubOpsController::class, 'revenueReports'])->name('revenue-reports.index');
 
     // Business Center
-    Route::get('business-settings',   [StubOpsController::class, 'businessSettings'])->name('business-settings.index');
-    Route::get('pricing-rules',       [StubOpsController::class, 'pricingRules'])->name('pricing-rules.index');
-    Route::get('taxes-fees',          [StubOpsController::class, 'taxesFees'])->name('taxes-fees.index');
-    Route::get('invoices',            [StubOpsController::class, 'invoices'])->name('invoices.index');
-    Route::get('subscriptions',       [StubOpsController::class, 'subscriptions'])->name('subscriptions.index');
-    Route::get('audit-logs',          [StubOpsController::class, 'auditLogs'])->name('audit-logs.index');
+    Route::get('business-settings',   [BusinessCenterController::class, 'businessSettings'])->name('business-settings.index');
+    Route::get('pricing-rules',       [BusinessCenterController::class, 'pricingRules'])->name('pricing-rules.index');
+    Route::get('taxes-fees',          [BusinessCenterController::class, 'taxesFees'])->name('taxes-fees.index');
+    Route::get('invoices',            [BusinessCenterController::class, 'invoices'])->name('invoices.index');
+    Route::get('subscriptions',       [BusinessCenterController::class, 'subscriptions'])->name('subscriptions.index');
+    Route::get('audit-logs',          [BusinessCenterController::class, 'auditLogs'])->name('audit-logs.index');
 
     // AI Center sidebar items — real ops pages
     Route::get('ai/assistant',        [StubOpsController::class, 'aiAssistant'])->name('ai.assistant.index');
