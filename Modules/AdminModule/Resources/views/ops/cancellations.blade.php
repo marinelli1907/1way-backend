@@ -28,30 +28,8 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-x-circle-fill text-danger"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $totalCancelled }}</div>
+                        <div class="fw-bold fs-3">{{ $totalCancelled ?? 0 }}</div>
                         <div class="oneway-kpi__label">Total Cancelled</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card oneway-card p-3">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="oneway-kpi__icon"><i class="bi bi-person-badge text-warning"></i></div>
-                    <div>
-                        <div class="fw-bold fs-3">{{ $cancelledByDriver }}</div>
-                        <div class="oneway-kpi__label">By Driver</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card oneway-card p-3">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="oneway-kpi__icon"><i class="bi bi-person text-info"></i></div>
-                    <div>
-                        <div class="fw-bold fs-3">{{ $cancelledByCustomer }}</div>
-                        <div class="oneway-kpi__label">By Customer</div>
                     </div>
                 </div>
             </div>
@@ -61,8 +39,30 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-day"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $todayCancelled }}</div>
-                        <div class="oneway-kpi__label">Today</div>
+                        <div class="fw-bold fs-3">{{ $cancelledToday ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Cancelled Today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-chat-quote text-info"></i></div>
+                    <div>
+                        <div class="fw-bold fs-6 text-truncate" title="{{ $topReason ?? '—' }}">{{ Str::limit($topReason ?? '—', 20, '…') }}</div>
+                        <div class="oneway-kpi__label">Top Reason</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-percent text-warning"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $cancelRate7d ?? 0 }}%</div>
+                        <div class="oneway-kpi__label">Cancel Rate (7d)</div>
                     </div>
                 </div>
             </div>
@@ -73,25 +73,34 @@
     <div class="card oneway-card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small">From Date</label>
-                    <input type="date" name="from" value="{{ $from }}" class="form-control form-control-sm">
+                    <input type="date" name="date_from" value="{{ $from ?? '' }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small">To Date</label>
-                    <input type="date" name="to" value="{{ $to }}" class="form-control form-control-sm">
+                    <input type="date" name="date_to" value="{{ $to ?? '' }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <label class="form-label small">Cancelled By</label>
                     <select name="cancelled_by" class="form-select form-select-sm">
                         <option value="">All</option>
-                        <option value="driver" {{ $cancelledBy === 'driver' ? 'selected' : '' }}>Driver</option>
-                        <option value="customer" {{ $cancelledBy === 'customer' ? 'selected' : '' }}>Customer</option>
+                        <option value="driver" {{ ($cancelledBy ?? '') === 'driver' ? 'selected' : '' }}>Driver</option>
+                        <option value="customer" {{ ($cancelledBy ?? '') === 'customer' ? 'selected' : '' }}>Customer</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <label class="form-label small">Zone</label>
+                    <select name="zone_id" class="form-select form-select-sm">
+                        <option value="">All zones</option>
+                        @foreach($zones ?? [] as $z)
+                        <option value="{{ $z->id }}" {{ ($zoneId ?? '') == $z->id ? 'selected' : '' }}>{{ $z->name ?? $z->id }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <label class="form-label small">Search</label>
-                    <input type="text" name="search" value="{{ $search }}" placeholder="Customer name or Trip ID" class="form-control form-control-sm">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Customer or Trip ID" class="form-control form-control-sm">
                 </div>
                 <div class="col-12">
                     <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
@@ -124,21 +133,21 @@
                         @forelse($trips as $trip)
                         <tr>
                             <td>
-                                <a href="{{ route('admin.trip.details', $trip->id) }}" class="text-decoration-none">
+                                <a href="{{ route('admin.trip.show', $trip->id) }}" class="text-decoration-none">
                                     {{ Str::limit($trip->ref_id ?? $trip->id, 12, '') }}
                                 </a>
                             </td>
                             <td>{{ $trip->customer?->first_name ?? '—' }} {{ $trip->customer?->last_name ?? '' }}</td>
-                            <td>{{ $trip->driver?->first_name ?? '<span class="text-muted">Unassigned</span>' }}</td>
+                            <td class="text-muted">{{ $trip->driver ? trim(($trip->driver->first_name ?? '') . ' ' . ($trip->driver->last_name ?? '')) : 'Unassigned' }}</td>
                             <td>
                                 <span class="badge bg-{{ $trip->fee?->cancelled_by === 'driver' ? 'warning' : 'info' }}">
                                     {{ ucfirst($trip->fee?->cancelled_by ?? 'unknown') }}
                                 </span>
                             </td>
-                            <td class="small">{{ Str::limit($trip->fee?->cancellation_reason ?? '—', 40, '...') }}</td>
+                            <td class="small">{{ Str::limit($trip->trip_cancellation_reason ?? $trip->fee?->cancellation_reason ?? '—', 40, '...') }}</td>
                             <td class="small">{{ $trip->updated_at?->format('M j, Y g:i A') ?? '—' }}</td>
                             <td>
-                                <a href="{{ route('admin.trip.details', $trip->id) }}" class="btn btn-sm btn-outline-primary">
+                                <a href="{{ route('admin.trip.show', $trip->id) }}" class="btn btn-sm btn-outline-primary">
                                     View
                                 </a>
                             </td>

@@ -12,6 +12,7 @@ use Modules\BusinessManagement\Entities\CancellationReason;
 use Modules\UserManagement\Entities\User;
 use Modules\UserManagement\Entities\DriverDetail;
 use Modules\ChattingManagement\Entities\ChannelList;
+use Modules\ZoneManagement\Entities\Zone;
 
 class OpsController extends Controller
 {
@@ -120,22 +121,31 @@ class OpsController extends Controller
 
     public function cancellations(Request $request)
     {
-        [$from, $to] = $this->dateFilter($request);
+        $from = $request->input('date_from', $request->input('from', Carbon::now()->subDays(30)->toDateString()));
+        $to   = $request->input('date_to', $request->input('to', Carbon::now()->toDateString()));
         $cancelledBy = $request->input('cancelled_by');
+        $zoneId      = $request->input('zone_id');
         $search      = $request->input('search');
 
-        $totalCancelled    = $this->safeCount(fn() => TripRequest::where('current_status', 'cancelled')->count());
-        $cancelledByDriver = $this->safeCount(fn() => TripRequest::where('current_status', 'cancelled')->whereHas('fee', fn($q) => $q->where('cancelled_by', 'driver'))->count());
-        $cancelledByCustomer = $this->safeCount(fn() => TripRequest::where('current_status', 'cancelled')->whereHas('fee', fn($q) => $q->where('cancelled_by', 'customer'))->count());
-        $todayCancelled    = $this->safeCount(fn() => TripRequest::where('current_status', 'cancelled')->whereDate('updated_at', today())->count());
+        $totalCancelled  = $this->safeCount(fn() => TripRequest::where('current_status', 'cancelled')->count());
+        $cancelledToday  = $this->safeCount(fn() => TripRequest::where('current_status', 'cancelled')->whereDate('updated_at', Carbon::today())->count());
+        $topReasonRaw = $this->safeQuery(fn() => TripRequest::where('current_status', 'cancelled')
+            ->whereNotNull('trip_cancellation_reason')->where('trip_cancellation_reason', '!=', '')
+            ->selectRaw('trip_cancellation_reason, count(*) as cnt')
+            ->groupBy('trip_cancellation_reason')->orderByDesc('cnt')->limit(1)->value('trip_cancellation_reason'));
+        $topReason = is_string($topReasonRaw) ? $topReasonRaw : null;
+        $total7d   = $this->safeCount(fn() => TripRequest::whereDate('created_at', '>=', Carbon::now()->subDays(7))->count());
+        $cancelled7d = $this->safeCount(fn() => TripRequest::where('current_status', 'cancelled')->whereDate('updated_at', '>=', Carbon::now()->subDays(7))->count());
+        $cancelRate7d = ($total7d > 0) ? round(($cancelled7d / $total7d) * 100, 1) : 0;
 
-        $cancellationReasons = $this->safeQuery(fn() => CancellationReason::orderBy('reason')->get());
+        $zones = $this->safeQuery(fn() => Zone::where('is_active', true)->orderBy('name')->get());
 
-        $trips = $this->safeQuery(fn() => TripRequest::with(['customer', 'driver', 'fee'])
+        $trips = $this->safeQuery(fn() => TripRequest::with(['customer', 'driver', 'fee', 'zone'])
             ->where('current_status', 'cancelled')
             ->whereDate('updated_at', '>=', $from)
             ->whereDate('updated_at', '<=', $to)
             ->when($cancelledBy, fn($q) => $q->whereHas('fee', fn($q2) => $q2->where('cancelled_by', $cancelledBy)))
+            ->when($zoneId, fn($q) => $q->where('zone_id', $zoneId))
             ->when($search, fn($q) => $q->where(function($q2) use ($search) {
                 $q2->whereHas('customer', fn($q3) => $q3->where('first_name', 'like', "%$search%")->orWhere('last_name', 'like', "%$search%"))
                    ->orWhere('ref_id', 'like', "%$search%");
@@ -143,9 +153,13 @@ class OpsController extends Controller
             ->orderByDesc('updated_at')
             ->paginate(20));
 
+        if (!is_object($trips) || !method_exists($trips, 'links')) {
+            $trips = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+        }
+
         return view('adminmodule::ops.cancellations', compact(
-            'totalCancelled', 'cancelledByDriver', 'cancelledByCustomer', 'todayCancelled',
-            'cancellationReasons', 'trips', 'from', 'to', 'cancelledBy', 'search'
+            'totalCancelled', 'cancelledToday', 'topReason', 'cancelRate7d',
+            'zones', 'trips', 'from', 'to', 'cancelledBy', 'zoneId', 'search'
         ));
     }
 
