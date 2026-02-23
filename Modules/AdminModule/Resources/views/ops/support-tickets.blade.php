@@ -15,7 +15,7 @@
             <div class="text-muted small">Manage customer support conversations and tickets</div>
         </div>
         <div>
-            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV functionality coming soon">
+            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV">
                 <i class="bi bi-download"></i> Export CSV
             </button>
         </div>
@@ -28,7 +28,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-inbox"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $totalChannels }}</div>
+                        <div class="fw-bold fs-3">{{ $totalChannels ?? 0 }}</div>
                         <div class="oneway-kpi__label">Total Tickets</div>
                     </div>
                 </div>
@@ -39,7 +39,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-circle-fill text-danger"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $openChannels }}</div>
+                        <div class="fw-bold fs-3">{{ $openChannels ?? 0 }}</div>
                         <div class="oneway-kpi__label">Open</div>
                     </div>
                 </div>
@@ -50,7 +50,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-check-circle-fill text-success"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $closedChannels }}</div>
+                        <div class="fw-bold fs-3">{{ $closedChannels ?? 0 }}</div>
                         <div class="oneway-kpi__label">Closed</div>
                     </div>
                 </div>
@@ -61,7 +61,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-day"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $todayChannels }}</div>
+                        <div class="fw-bold fs-3">{{ $todayChannels ?? 0 }}</div>
                         <div class="oneway-kpi__label">Today</div>
                     </div>
                 </div>
@@ -73,17 +73,25 @@
     <div class="card oneway-card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <div class="col-md-4">
+                <div class="col-md-2">
+                    <label class="form-label small">From Date</label>
+                    <input type="date" name="date_from" value="{{ $dateFrom ?? '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">To Date</label>
+                    <input type="date" name="date_to" value="{{ $dateTo ?? '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
                     <label class="form-label small">Status</label>
                     <select name="status" class="form-select form-select-sm">
                         <option value="">All Status</option>
-                        <option value="1" {{ $status === '1' ? 'selected' : '' }}>Open</option>
-                        <option value="0" {{ $status === '0' ? 'selected' : '' }}>Closed</option>
+                        <option value="1" {{ ($status ?? '') === '1' ? 'selected' : '' }}>Open</option>
+                        <option value="0" {{ ($status ?? '') === '0' ? 'selected' : '' }}>Closed</option>
                     </select>
                 </div>
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label small">Search</label>
-                    <input type="text" name="search" value="{{ $search }}" placeholder="Search by title..." class="form-control form-control-sm">
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Search by title..." class="form-control form-control-sm">
                 </div>
                 <div class="col-md-2 d-flex align-items-end">
                     <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>

@@ -169,22 +169,30 @@ class OpsController extends Controller
     {
         $search = $request->input('search');
         $status = $request->input('status');
+        $dateFrom = $request->input('date_from');
+        $dateTo   = $request->input('date_to');
 
         // Support is handled via ChattingManagement (ChannelList model)
         $totalChannels  = $this->safeCount(fn() => ChannelList::count());
         $openChannels   = $this->safeCount(fn() => ChannelList::where('is_active', true)->count());
         $closedChannels = $this->safeCount(fn() => ChannelList::where('is_active', false)->count());
-        $todayChannels  = $this->safeCount(fn() => ChannelList::whereDate('created_at', today())->count());
+        $todayChannels  = $this->safeCount(fn() => ChannelList::whereDate('created_at', Carbon::today())->count());
 
         $channels = $this->safeQuery(fn() => ChannelList::with(['channelUsers.user'])
             ->when($status !== null && $status !== '', fn($q) => $q->where('is_active', (bool)$status))
+            ->when($dateFrom, fn($q) => $q->whereDate('created_at', '>=', $dateFrom))
+            ->when($dateTo, fn($q) => $q->whereDate('created_at', '<=', $dateTo))
             ->when($search, fn($q) => $q->where('title', 'like', "%$search%"))
             ->orderByDesc('updated_at')
             ->paginate(20));
 
+        if (!is_object($channels) || !method_exists($channels, 'links')) {
+            $channels = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+        }
+
         return view('adminmodule::ops.support-tickets', compact(
             'totalChannels', 'openChannels', 'closedChannels', 'todayChannels',
-            'channels', 'search', 'status'
+            'channels', 'search', 'status', 'dateFrom', 'dateTo'
         ));
     }
 }
