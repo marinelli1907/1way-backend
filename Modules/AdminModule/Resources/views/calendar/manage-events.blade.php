@@ -22,19 +22,75 @@
         </div>
     </div>
 
-    {{-- INFO CARD --}}
-    <div class="card oneway-card mb-4">
-        <div class="card-body">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <h5 class="mb-2">Event Management</h5>
-                    <p class="text-muted mb-0">Create events and manage scheduled rides. Events help organize trips around specific occasions, venues, or time periods.</p>
-                </div>
-                <div class="col-md-4 text-end">
-                    <div class="fw-bold fs-3">{{ $zones->count() ?? 0 }}</div>
-                    <div class="text-muted small">Active Zones Available</div>
+    {{-- KPI CARDS --}}
+    <div class="row g-3 mb-4">
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-geo-alt"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $totalZones ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Total Zones</div>
+                    </div>
                 </div>
             </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-check-circle text-success"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $activeZones ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Active Zones</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-calendar-check text-info"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $scheduledTrips ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Scheduled Trips</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-hourglass-split text-warning"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $pendingTrips ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Pending Trips</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- FILTERS --}}
+    <div class="card oneway-card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label small">Search</label>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Zone name..." class="form-control form-control-sm">
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="1" {{ ($status ?? '') === '1' ? 'selected' : '' }}>Active</option>
+                        <option value="0" {{ ($status ?? '') === '0' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
+                    <a href="{{ route('admin.events.manage') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -65,16 +121,14 @@
                             </td>
                             <td class="small">{{ Str::limit($zone->coordinates ?? '—', 50, '...') }}</td>
                             <td>
-                                <a href="{{ route('admin.zone.index') }}" class="btn btn-sm btn-outline-primary">
-                                    View Zone
-                                </a>
+                                <a href="{{ route('admin.zone.index') }}" class="btn btn-sm btn-outline-primary">View Zone</a>
                             </td>
                         </tr>
                         @empty
                         <tr><td colspan="4" class="text-center text-muted py-4">
                             <div class="py-4">
                                 <i class="bi bi-geo-alt fs-1 text-muted d-block mb-2"></i>
-                                <div>No zones available</div>
+                                <div>No zones found</div>
                                 <a href="{{ route('admin.zone.index') }}" class="btn btn-sm btn-primary mt-2">Manage Zones</a>
                             </div>
                         </td></tr>
@@ -82,18 +136,11 @@
                     </tbody>
                 </table>
             </div>
-        </div>
-    </div>
-
-    {{-- INFO: Event creation form in a future release --}}
-    <div class="card oneway-card mt-4 border-info">
-        <div class="card-body text-center py-5">
-            <i class="bi bi-tools fs-1 text-info d-block mb-3"></i>
-            <h5 class="fw-bold mb-2">Event creation</h5>
-            <p class="text-muted mb-4">Create and manage events in a future release. For now, view scheduled trips in the Events List.</p>
-            <a href="{{ route('admin.events.index') }}" class="btn btn-primary">
-                <i class="bi bi-arrow-left"></i> View Events List
-            </a>
+            @if(method_exists($zones, 'links'))
+            <div class="card-footer bg-transparent border-0">
+                {{ $zones->links() }}
+            </div>
+            @endif
         </div>
     </div>
 

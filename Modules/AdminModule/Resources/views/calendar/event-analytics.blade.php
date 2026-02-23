@@ -16,7 +16,7 @@
             <div class="text-muted small">Analyze trip performance and trends</div>
         </div>
         <div>
-            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV functionality coming soon">
+            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV">
                 <i class="bi bi-download"></i> Export CSV
             </button>
         </div>
@@ -26,16 +26,21 @@
     <div class="card oneway-card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <div class="col-md-5">
+                <div class="col-md-2">
                     <label class="form-label small">From Date</label>
-                    <input type="date" name="from" value="{{ $from }}" class="form-control form-control-sm">
+                    <input type="date" name="date_from" value="{{ $from ?? '' }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-5">
+                <div class="col-md-2">
                     <label class="form-label small">To Date</label>
-                    <input type="date" name="to" value="{{ $to }}" class="form-control form-control-sm">
+                    <input type="date" name="date_to" value="{{ $to ?? '' }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-sm btn-primary w-100">Filter</button>
+                <div class="col-md-4">
+                    <label class="form-label small">Search zone</label>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Zone name..." class="form-control form-control-sm">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
+                    <a href="{{ route('admin.event-analytics.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>
@@ -48,7 +53,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-car-front-fill"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $totalTrips }}</div>
+                        <div class="fw-bold fs-3">{{ $totalTrips ?? 0 }}</div>
                         <div class="oneway-kpi__label">Total Trips</div>
                     </div>
                 </div>
@@ -59,7 +64,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-check text-info"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $scheduledTrips }}</div>
+                        <div class="fw-bold fs-3">{{ $scheduledTrips ?? 0 }}</div>
                         <div class="oneway-kpi__label">Scheduled</div>
                     </div>
                 </div>
@@ -70,7 +75,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-check-circle text-success"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $completedTrips }}</div>
+                        <div class="fw-bold fs-3">{{ $completedTrips ?? 0 }}</div>
                         <div class="oneway-kpi__label">Completed</div>
                     </div>
                 </div>
@@ -81,7 +86,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-x-circle text-danger"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $cancelledTrips }}</div>
+                        <div class="fw-bold fs-3">{{ $cancelledTrips ?? 0 }}</div>
                         <div class="oneway-kpi__label">Cancelled</div>
                     </div>
                 </div>

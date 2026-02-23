@@ -16,7 +16,7 @@
             <div class="text-muted small">Manage event venues and service locations</div>
         </div>
         <div>
-            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV functionality coming soon">
+            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV">
                 <i class="bi bi-download"></i> Export CSV
             </button>
         </div>
@@ -24,24 +24,35 @@
 
     {{-- KPI CARDS --}}
     <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card oneway-card p-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-geo-alt"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $totalZones }}</div>
+                        <div class="fw-bold fs-3">{{ $totalZones ?? 0 }}</div>
                         <div class="oneway-kpi__label">Total Zones</div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card oneway-card p-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-check-circle text-success"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $activeZones }}</div>
-                        <div class="oneway-kpi__label">Active Zones</div>
+                        <div class="fw-bold fs-3">{{ $activeZones ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Active</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-dash-circle text-secondary"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $inactiveZones ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Inactive</div>
                     </div>
                 </div>
             </div>
@@ -52,12 +63,29 @@
     <div class="card oneway-card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <div class="col-md-10">
-                    <label class="form-label small">Search</label>
-                    <input type="text" name="search" value="{{ $search }}" placeholder="Search by zone name..." class="form-control form-control-sm">
+                <div class="col-md-2">
+                    <label class="form-label small">From Date</label>
+                    <input type="date" name="date_from" value="{{ $from ?? '' }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-sm btn-primary w-100">Search</button>
+                <div class="col-md-2">
+                    <label class="form-label small">To Date</label>
+                    <input type="date" name="date_to" value="{{ $to ?? '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Status</label>
+                    <select name="status" class="form-select form-select-sm">
+                        <option value="">All</option>
+                        <option value="1" {{ ($status ?? '') === '1' ? 'selected' : '' }}>Active</option>
+                        <option value="0" {{ ($status ?? '') === '0' ? 'selected' : '' }}>Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Search</label>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Zone name..." class="form-control form-control-sm">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
+                    <a href="{{ route('admin.venues.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>

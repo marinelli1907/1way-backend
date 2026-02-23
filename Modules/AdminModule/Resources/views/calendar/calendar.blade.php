@@ -33,24 +33,46 @@
 
     {{-- KPI CARDS --}}
     <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card oneway-card p-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-check"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $totalScheduled }}</div>
-                        <div class="oneway-kpi__label">Total Scheduled Trips</div>
+                        <div class="fw-bold fs-3">{{ $totalScheduled ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Total Scheduled</div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card oneway-card p-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-month"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $thisMonthTrips }}</div>
+                        <div class="fw-bold fs-3">{{ $thisMonthTrips ?? 0 }}</div>
                         <div class="oneway-kpi__label">This Month</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-check-circle text-success"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $thisMonthComplete ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Completed This Month</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-hourglass-split text-info"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $pendingCount ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Pending</div>
                     </div>
                 </div>
             </div>

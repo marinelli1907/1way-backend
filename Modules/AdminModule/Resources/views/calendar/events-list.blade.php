@@ -23,24 +23,46 @@
 
     {{-- KPI CARDS --}}
     <div class="row g-3 mb-4">
-        <div class="col-sm-6 col-xl-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card oneway-card p-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-check"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $totalScheduled }}</div>
+                        <div class="fw-bold fs-3">{{ $totalScheduled ?? 0 }}</div>
                         <div class="oneway-kpi__label">Scheduled Trips</div>
                     </div>
                 </div>
             </div>
         </div>
-        <div class="col-sm-6 col-xl-6">
+        <div class="col-sm-6 col-xl-3">
             <div class="card oneway-card p-3">
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-geo-alt"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $totalZones }}</div>
+                        <div class="fw-bold fs-3">{{ $totalZones ?? 0 }}</div>
                         <div class="oneway-kpi__label">Active Zones</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-calendar-day text-info"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $scheduledToday ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Scheduled Today</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-check-circle text-success"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $completedCount ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Total Completed</div>
                     </div>
                 </div>
             </div>
@@ -51,12 +73,30 @@
     <div class="card oneway-card mb-4">
         <div class="card-body">
             <form method="GET" class="row g-3">
-                <div class="col-md-10">
-                    <label class="form-label small">Search</label>
-                    <input type="text" name="search" value="{{ $search }}" placeholder="Search by customer name..." class="form-control form-control-sm">
+                <div class="col-md-2">
+                    <label class="form-label small">From Date</label>
+                    <input type="date" name="date_from" value="{{ $from ?? '' }}" class="form-control form-control-sm">
                 </div>
-                <div class="col-md-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-sm btn-primary w-100">Search</button>
+                <div class="col-md-2">
+                    <label class="form-label small">To Date</label>
+                    <input type="date" name="date_to" value="{{ $to ?? '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Zone</label>
+                    <select name="zone_id" class="form-select form-select-sm">
+                        <option value="">All zones</option>
+                        @foreach($zones ?? [] as $z)
+                        <option value="{{ $z->id }}" {{ ($zoneId ?? '') == $z->id ? 'selected' : '' }}>{{ $z->name ?? $z->id }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Search</label>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Customer or Trip ID" class="form-control form-control-sm">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
+                    <a href="{{ route('admin.events.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
                 </div>
             </form>
         </div>
@@ -64,11 +104,8 @@
 
     {{-- EVENTS TABLE --}}
     <div class="card oneway-card">
-        <div class="card-header bg-transparent border-0 d-flex justify-content-between align-items-center">
+        <div class="card-header bg-transparent border-0">
             <h5 class="mb-0 fw-semibold">Scheduled Trips</h5>
-            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV functionality coming soon">
-                <i class="bi bi-download"></i> Export CSV
-            </button>
         </div>
         <div class="card-body p-0">
             <div class="table-responsive">
@@ -88,7 +125,7 @@
                         @forelse($scheduledTrips as $trip)
                         <tr>
                             <td>
-                                <a href="{{ route('admin.trip.details', $trip->id) }}" class="text-decoration-none">
+                                <a href="{{ route('admin.trip.show', $trip->id) }}" class="text-decoration-none">
                                     {{ Str::limit($trip->ref_id ?? $trip->id, 12, '') }}
                                 </a>
                             </td>
@@ -98,17 +135,15 @@
                             <td class="small">{{ $trip->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
                             <td><span class="badge bg-info">{{ ucfirst($trip->current_status ?? 'scheduled') }}</span></td>
                             <td>
-                                <a href="{{ route('admin.trip.details', $trip->id) }}" class="btn btn-sm btn-outline-primary">
-                                    View
-                                </a>
+                                <a href="{{ route('admin.trip.show', $trip->id) }}" class="btn btn-sm btn-outline-primary">View</a>
                             </td>
                         </tr>
                         @empty
                         <tr><td colspan="7" class="text-center text-muted py-4">
                             <div class="py-4">
                                 <i class="bi bi-calendar-x fs-1 text-muted d-block mb-2"></i>
-                                <div>No scheduled trips found</div>
-                                <a href="{{ route('admin.events.manage') }}" class="btn btn-sm btn-primary mt-2">Create Event</a>
+                                <div>No scheduled trips found for this period</div>
+                                <a href="{{ route('admin.events.manage') }}" class="btn btn-sm btn-primary mt-2">Manage Events</a>
                             </div>
                         </td></tr>
                         @endforelse

@@ -16,7 +16,7 @@
             <div class="text-muted small">Plan and coordinate rides for events</div>
         </div>
         <div>
-            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV functionality coming soon">
+            <button class="btn btn-sm btn-outline-secondary" disabled title="Export CSV">
                 <i class="bi bi-download"></i> Export CSV
             </button>
         </div>
@@ -29,7 +29,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-check"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $scheduledCount }}</div>
+                        <div class="fw-bold fs-3">{{ $scheduledCount ?? 0 }}</div>
                         <div class="oneway-kpi__label">Scheduled</div>
                     </div>
                 </div>
@@ -40,7 +40,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-hourglass-split text-info"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $pendingCount }}</div>
+                        <div class="fw-bold fs-3">{{ $pendingCount ?? 0 }}</div>
                         <div class="oneway-kpi__label">Pending</div>
                     </div>
                 </div>
@@ -51,7 +51,7 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-wifi text-success"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $driversOnline }}</div>
+                        <div class="fw-bold fs-3">{{ $driversOnline ?? 0 }}</div>
                         <div class="oneway-kpi__label">Drivers Online</div>
                     </div>
                 </div>
@@ -62,11 +62,91 @@
                 <div class="d-flex align-items-center gap-3">
                     <div class="oneway-kpi__icon"><i class="bi bi-check-circle text-primary"></i></div>
                     <div>
-                        <div class="fw-bold fs-3">{{ $driversAvail }}</div>
+                        <div class="fw-bold fs-3">{{ $driversAvail ?? 0 }}</div>
                         <div class="oneway-kpi__label">Available</div>
                     </div>
                 </div>
             </div>
+        </div>
+    </div>
+
+    {{-- FILTERS --}}
+    <div class="card oneway-card mb-4">
+        <div class="card-body">
+            <form method="GET" class="row g-3">
+                <div class="col-md-2">
+                    <label class="form-label small">From Date</label>
+                    <input type="date" name="date_from" value="{{ $from ?? '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">To Date</label>
+                    <input type="date" name="date_to" value="{{ $to ?? '' }}" class="form-control form-control-sm">
+                </div>
+                <div class="col-md-2">
+                    <label class="form-label small">Zone</label>
+                    <select name="zone_id" class="form-select form-select-sm">
+                        <option value="">All zones</option>
+                        @foreach($zones ?? [] as $z)
+                        <option value="{{ $z->id }}" {{ ($zoneId ?? '') == $z->id ? 'selected' : '' }}>{{ $z->name ?? $z->id }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label small">Search</label>
+                    <input type="text" name="search" value="{{ $search ?? '' }}" placeholder="Trip or customer" class="form-control form-control-sm">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-sm btn-primary">Apply Filters</button>
+                    <a href="{{ route('admin.event-ride-planner.index') }}" class="btn btn-sm btn-outline-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- SCHEDULED TRIPS TABLE --}}
+    <div class="card oneway-card mb-4">
+        <div class="card-header bg-transparent border-0">
+            <h5 class="mb-0 fw-semibold">Scheduled Trips</h5>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Trip ID</th>
+                            <th>Customer</th>
+                            <th>Zone</th>
+                            <th>Scheduled</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @forelse($trips as $trip)
+                        <tr>
+                            <td>
+                                <a href="{{ route('admin.trip.show', $trip->id) }}" class="text-decoration-none">{{ Str::limit($trip->ref_id ?? $trip->id, 12, '') }}</a>
+                            </td>
+                            <td>{{ $trip->customer?->first_name ?? '—' }} {{ $trip->customer?->last_name ?? '' }}</td>
+                            <td>{{ $trip->zone?->name ?? '—' }}</td>
+                            <td class="small">{{ $trip->created_at?->format('M j, Y g:i A') ?? '—' }}</td>
+                            <td><a href="{{ route('admin.trip.show', $trip->id) }}" class="btn btn-sm btn-outline-primary">View</a></td>
+                        </tr>
+                        @empty
+                        <tr><td colspan="5" class="text-center text-muted py-4">
+                            <div class="py-4">
+                                <i class="bi bi-calendar-x fs-1 text-muted d-block mb-2"></i>
+                                <div>No scheduled trips for this period</div>
+                            </div>
+                        </td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
+            @if(method_exists($trips, 'links'))
+            <div class="card-footer bg-transparent border-0">
+                {{ $trips->links() }}
+            </div>
+            @endif
         </div>
     </div>
 
