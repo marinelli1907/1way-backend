@@ -6,6 +6,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PlaceholderController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiCenterController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\BusinessCenterController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DriverOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PromotionsController;
@@ -144,12 +145,12 @@ Route::get('/', 'index')->name('root');
     Route::get('audit-logs',          [BusinessCenterController::class, 'auditLogs'])->name('audit-logs.index');
 
     // AI Center sidebar items — real ops pages
-    Route::get('ai/assistant',        [StubOpsController::class, 'aiAssistant'])->name('ai.assistant.index');
-    Route::get('ai/fraud',            [StubOpsController::class, 'aiFraud'])->name('ai.fraud.index');
-    Route::get('ai/pricing',          [StubOpsController::class, 'aiPricing'])->name('ai.pricing.index');
-    Route::get('ai/supply',           [StubOpsController::class, 'aiSupply'])->name('ai.supply.index');
-    Route::get('ai/promo',            [StubOpsController::class, 'aiPromo'])->name('ai.promo.index');
-    Route::get('ai/autoreplies',      [StubOpsController::class, 'aiAutoreplies'])->name('ai.autoreplies.index');
+    Route::get('ai/assistant',        [AiCenterController::class, 'aiAssistant'])->name('ai.assistant.index');
+    Route::get('ai/fraud',            [AiCenterController::class, 'aiFraud'])->name('ai.fraud.index');
+    Route::get('ai/pricing',          [AiCenterController::class, 'aiPricing'])->name('ai.pricing.index');
+    Route::get('ai/supply',           [AiCenterController::class, 'aiSupply'])->name('ai.supply.index');
+    Route::get('ai/promo',            [AiCenterController::class, 'aiPromo'])->name('ai.promo.index');
+    Route::get('ai/autoreplies',      [AiCenterController::class, 'aiAutoreplies'])->name('ai.autoreplies.index');
 
     // System
     Route::get('system/config',         [StubOpsController::class, 'systemConfig'])->name('system.config.index');
