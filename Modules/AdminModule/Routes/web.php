@@ -10,8 +10,9 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiCenterController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\BusinessCenterController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SystemController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DriverOpsController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\PaymentsFinanceController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PromotionsController;
-use Modules\AdminModule\Http\Controllers\Web\New\Admin\StubOpsController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\UsersOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SettingController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SharedController;
@@ -118,8 +119,8 @@ Route::get('/', 'index')->name('root');
     Route::get('payout-rules',        [PromotionsController::class, 'payoutRules'])->name('payout-rules.index');
 
     // Users
-    Route::get('roles',               [StubOpsController::class, 'roles'])->name('roles.index');
-    Route::get('reviews',             [StubOpsController::class, 'reviews'])->name('reviews.index');
+    Route::get('roles',               [UsersOpsController::class, 'roles'])->name('roles.index');
+    Route::get('reviews',             [UsersOpsController::class, 'reviews'])->name('reviews.index');
 
     // Driver Ops
     Route::get('driver-applications', [DriverOpsController::class, 'driverApplications'])->name('driver-applications.index');
@@ -129,13 +130,13 @@ Route::get('/', 'index')->name('root');
     Route::get('driver-availability', [DriverOpsController::class, 'driverAvailability'])->name('driver-availability.index');
     Route::get('driver-performance',  [DriverOpsController::class, 'driverPerformance'])->name('driver-performance.index');
 
-    // Payments & Finance (incl. withdraw + coupon so sidebar route names exist)
-    Route::get('withdraw',            [StubOpsController::class, 'withdraw'])->name('withdraw.index');
-    Route::get('cash-collect',        [StubOpsController::class, 'cashCollect'])->name('cash-collect.index');
-    Route::get('refunds',             [StubOpsController::class, 'refunds'])->name('refunds.index');
-    Route::get('commissions',         [StubOpsController::class, 'commissions'])->name('commissions.index');
-    Route::get('coupon',              [StubOpsController::class, 'coupon'])->name('coupon.index');
-    Route::get('revenue-reports',     [StubOpsController::class, 'revenueReports'])->name('revenue-reports.index');
+    // Payments & Finance (sidebar route names unchanged; do not touch Transaction module pages)
+    Route::get('withdraw',            [PaymentsFinanceController::class, 'withdraw'])->name('withdraw.index');
+    Route::get('cash-collect',        [PaymentsFinanceController::class, 'cashCollect'])->name('cash-collect.index');
+    Route::get('refunds',             [PaymentsFinanceController::class, 'refunds'])->name('refunds.index');
+    Route::get('commissions',         [PaymentsFinanceController::class, 'commissions'])->name('commissions.index');
+    Route::get('coupon',              [PaymentsFinanceController::class, 'coupon'])->name('coupon.index');
+    Route::get('revenue-reports',     [PaymentsFinanceController::class, 'revenueReports'])->name('revenue-reports.index');
 
     // Business Center
     Route::get('business-settings',   [BusinessCenterController::class, 'businessSettings'])->name('business-settings.index');
