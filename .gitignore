@@ -2,6 +2,8 @@
 .env.*
 vendor/
 node_modules/
+package-lock.json
+.DS_Store
 storage/logs/*
 storage/framework/*
 bootstrap/cache/*
