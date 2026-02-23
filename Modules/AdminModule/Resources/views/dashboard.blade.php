@@ -31,7 +31,7 @@
                         <i class="bi bi-people"></i>
                     </div>
                     <div>
-                        <div class="fw-bold fs-4">{{ abbreviateNumber($customers) }}</div>
+                        <div class="fw-bold fs-4">{{ abbreviateNumber($customers ?? 0) }}</div>
                         <div class="oneway-kpi__label">Active Customers</div>
                     </div>
                 </div>
@@ -45,7 +45,7 @@
                         <i class="bi bi-person-badge"></i>
                     </div>
                     <div>
-                        <div class="fw-bold fs-4">{{ abbreviateNumber($drivers) }}</div>
+                        <div class="fw-bold fs-4">{{ abbreviateNumber($drivers ?? 0) }}</div>
                         <div class="oneway-kpi__label">Active Drivers</div>
                     </div>
                 </div>
@@ -59,7 +59,7 @@
                         <i class="bi bi-cash-coin"></i>
                     </div>
                     <div>
-                        <div class="fw-bold fs-4">{{ abbreviateNumberWithSymbol($totalEarning) }}</div>
+                        <div class="fw-bold fs-4">{{ abbreviateNumberWithSymbol($totalEarning ?? 0) }}</div>
                         <div class="oneway-kpi__label">Total Revenue</div>
                     </div>
                 </div>
@@ -73,7 +73,7 @@
                         <i class="bi bi-car-front-fill"></i>
                     </div>
                     <div>
-                        <div class="fw-bold fs-4">{{ abbreviateNumber($totalTrips) }}</div>
+                        <div class="fw-bold fs-4">{{ abbreviateNumber($totalTrips ?? 0) }}</div>
                         <div class="oneway-kpi__label">Total Trips</div>
                     </div>
                 </div>
@@ -148,18 +148,18 @@
                 </div>
 
                 <div class="card-body">
-                    @forelse($transactions as $tx)
+                    @forelse(($transactions ?? collect()) as $tx)
                         <div class="d-flex justify-content-between border-bottom py-2">
                             <div>
                                 <div class="fw-semibold">
-                                    {{ $tx->credit > 0 ? 'Credit' : 'Debit' }}
+                                    {{ ($tx->credit ?? 0) > 0 ? 'Credit' : 'Debit' }}
                                 </div>
                                 <div class="text-muted fs-13">
-                                    {{ date(DATE_FORMAT, strtotime($tx->created_at)) }}
+                                    {{ $tx->created_at ? date(DATE_FORMAT, strtotime($tx->created_at)) : '—' }}
                                 </div>
                             </div>
                             <div class="fw-bold">
-                                {{ getCurrencyFormat($tx->credit ?: $tx->debit) }}
+                                {{ getCurrencyFormat(($tx->credit ?: $tx->debit ?? null) ?? 0) }}
                             </div>
                         </div>
                     @empty

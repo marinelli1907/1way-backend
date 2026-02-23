@@ -68,13 +68,17 @@ class DashboardController extends BaseController
 
     public function index(?Request $request, string $type = null): View|Collection|LengthAwarePaginator|null|callable|RedirectResponse
     {
-        // Wrap all data queries — if any fail (e.g. spatial query errors, missing tables)
-        // we still render the dashboard with zeroed-out safe defaults instead of a blank screen.
+        $zones = collect();
+        $transactions = collect();
+        $superAdminAccount = null;
+        $customers = $drivers = $totalTrips = $totalParcels = 0;
+        $totalEarning = $totalTripsEarning = $totalParcelsEarning = 0;
+        $totalCouponAmountGiven = $totalDiscountAmountGiven = 0;
+
         try {
             $zones = $this->zoneService->getBy(criteria: ['is_active' => 1]);
         } catch (\Throwable $e) {
             \Log::warning('Dashboard: zones query failed — ' . $e->getMessage());
-            $zones = collect();
         }
 
         try {
@@ -96,18 +100,22 @@ class DashboardController extends BaseController
             $totalParcelsEarning   = $this->tripRequestService->getBy(criteria: ['type' => PARCEL, 'payment_status' => PAID], whereHasRelations: $whereHasRelations, relations: ['fee'])->sum('fee.admin_commission');
         } catch (\Throwable $e) {
             \Log::warning('Dashboard: KPI queries failed — ' . $e->getMessage());
-            $transactions = collect();
-            $superAdminAccount = null;
-            $customers = $drivers = $totalTrips = $totalParcels = 0;
-            $totalEarning = $totalTripsEarning = $totalParcelsEarning = 0;
-            $totalCouponAmountGiven = $totalDiscountAmountGiven = 0;
         }
 
-        return view('adminmodule::dashboard', compact(
-            'zones', 'transactions', 'superAdminAccount', 'customers',
-            'drivers', 'totalDiscountAmountGiven', 'totalCouponAmountGiven',
-            'totalTrips', 'totalParcels', 'totalEarning', 'totalTripsEarning', 'totalParcelsEarning'
-        ));
+        try {
+            return view('adminmodule::dashboard', compact(
+                'zones', 'transactions', 'superAdminAccount', 'customers',
+                'drivers', 'totalDiscountAmountGiven', 'totalCouponAmountGiven',
+                'totalTrips', 'totalParcels', 'totalEarning', 'totalTripsEarning', 'totalParcelsEarning'
+            ));
+        } catch (\Throwable $e) {
+            \Log::error('Admin dashboard load failed', ['message' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            return view('adminmodule::dashboard', compact(
+                'zones', 'transactions', 'superAdminAccount', 'customers',
+                'drivers', 'totalDiscountAmountGiven', 'totalCouponAmountGiven',
+                'totalTrips', 'totalParcels', 'totalEarning', 'totalTripsEarning', 'totalParcelsEarning'
+            ));
+        }
     }
 
     public function recentTripActivity()
