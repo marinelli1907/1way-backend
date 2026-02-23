@@ -66,6 +66,11 @@ class User extends Authenticatable
         'loyalty_points' => 'double'
     ];
 
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
     protected static function newFactory()
     {
         return \Modules\UserManagement\Database\factories\UserFactory::new();
