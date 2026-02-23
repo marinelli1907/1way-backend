@@ -66,24 +66,44 @@ class OpsController extends Controller
 
     public function alerts(Request $request)
     {
-        [$from, $to] = $this->dateFilter($request);
-        $status = $request->input('status');
+        $from = $request->input('date_from', $request->input('from', Carbon::now()->subDays(30)->toDateString()));
+        $to   = $request->input('date_to', $request->input('to', Carbon::now()->toDateString()));
+        $status  = $request->input('status');
+        $zoneId  = $request->input('zone_id');
+        $search  = $request->input('search');
 
         $totalAlerts    = $this->safeCount(fn() => SafetyAlert::count());
-        $openAlerts     = $this->safeCount(fn() => SafetyAlert::where('is_active', true)->count());
-        $resolvedAlerts = $this->safeCount(fn() => SafetyAlert::where('is_active', false)->count());
-        $todayAlerts    = $this->safeCount(fn() => SafetyAlert::whereDate('created_at', today())->count());
+        $openAlerts     = $this->safeCount(fn() => SafetyAlert::where('status', 'pending')->count());
+        $resolvedAlerts = $this->safeCount(fn() => SafetyAlert::where('status', '!=', 'pending')->count());
+        $todayAlerts    = $this->safeCount(fn() => SafetyAlert::whereDate('created_at', Carbon::today())->count());
 
-        $query = $this->safeQuery(fn() => SafetyAlert::with(['tripRequest', 'tripRequest.customer', 'tripRequest.driver'])
+        $zones = $this->safeQuery(fn() => Zone::where('is_active', true)->orderBy('name')->get());
+
+        $alerts = $this->safeQuery(fn() => SafetyAlert::with(['trip', 'trip.customer', 'trip.driver', 'trip.zone'])
             ->whereDate('created_at', '>=', $from)
             ->whereDate('created_at', '<=', $to)
-            ->when($status !== null && $status !== '', fn($q) => $q->where('is_active', (bool)$status))
+            ->when($status !== null && $status !== '', function ($q) use ($status) {
+                if ($status === '1' || $status === 'open') {
+                    $q->where('status', 'pending');
+                } else {
+                    $q->where('status', '!=', 'pending');
+                }
+            })
+            ->when($zoneId, fn($q) => $q->whereHas('trip', fn($q2) => $q2->where('zone_id', $zoneId)))
+            ->when($search, fn($q) => $q->whereHas('trip', function ($q2) use ($search) {
+                $q2->where('ref_id', 'like', "%$search%")
+                    ->orWhereHas('customer', fn($q3) => $q3->where('first_name', 'like', "%$search%")->orWhere('last_name', 'like', "%$search%"));
+            }))
             ->orderByDesc('created_at')
             ->paginate(20));
 
+        if (!is_object($alerts) || !method_exists($alerts, 'links')) {
+            $alerts = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 20);
+        }
+
         return view('adminmodule::ops.alerts', compact(
             'totalAlerts', 'openAlerts', 'resolvedAlerts', 'todayAlerts',
-            'query', 'from', 'to', 'status'
+            'alerts', 'zones', 'from', 'to', 'status', 'zoneId', 'search'
         ));
     }
 
