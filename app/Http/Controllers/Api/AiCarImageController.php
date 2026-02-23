@@ -3,23 +3,77 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\GenerateAiCarImageJob;
+use App\Models\AiCarImage;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
-/**
- * Stub for AI car image generation (driver app).
- * GET or POST /api/ai/generate-car-image and /api/v1/ai/generate-car-image.
- * Returns stable JSON; no fatal errors on missing params.
- */
 class AiCarImageController extends Controller
 {
-    public function __invoke(Request $request): JsonResponse
+    /**
+     * POST/GET /api/ai/generate-car-image — requires auth. Queues job, returns job_id.
+     */
+    public function generate(Request $request): JsonResponse
     {
-        // Optional: make, model, color — accepted but not required; stub does not use them
+        $validated = $request->validate([
+            'make' => 'nullable|string|max:50',
+            'model' => 'nullable|string|max:50',
+            'color' => 'nullable|string|max:50',
+        ]);
+
+        $id = (string) Str::uuid();
+        AiCarImage::create([
+            'id' => $id,
+            'user_id' => $request->user()?->getKey(),
+            'make' => $validated['make'] ?? null,
+            'model' => $validated['model'] ?? null,
+            'color' => $validated['color'] ?? null,
+            'status' => AiCarImage::STATUS_QUEUED,
+        ]);
+
+        GenerateAiCarImageJob::dispatch($id);
+
         return response()->json([
             'ok' => true,
-            'image_url' => null,
-            'message' => 'Not implemented yet',
+            'job_id' => $id,
+            'status' => 'queued',
+        ], 200);
+    }
+
+    /**
+     * GET /api/ai/generate-car-image/status?job_id=<uuid> — requires auth, own job only.
+     */
+    public function status(Request $request): JsonResponse
+    {
+        $jobId = $request->query('job_id');
+        if (!$jobId || !is_string($jobId)) {
+            return response()->json([
+                'ok' => false,
+                'status' => 'failed',
+                'image_url' => null,
+                'message' => 'Missing job_id',
+            ], 400);
+        }
+
+        $record = AiCarImage::where('id', $jobId)
+            ->where('user_id', $request->user()?->getKey())
+            ->first();
+
+        if (!$record) {
+            return response()->json([
+                'ok' => false,
+                'status' => 'failed',
+                'image_url' => null,
+                'message' => 'Job not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'ok' => true,
+            'status' => $record->status,
+            'image_url' => $record->image_url,
+            'message' => $record->error_message,
         ], 200);
     }
 }
