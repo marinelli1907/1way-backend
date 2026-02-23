@@ -8,6 +8,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeControll
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PlaceholderController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiCenterController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\BusinessCenterController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\SystemController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DriverOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PromotionsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\StubOpsController;
@@ -153,12 +154,12 @@ Route::get('/', 'index')->name('root');
     Route::get('ai/autoreplies',      [AiCenterController::class, 'aiAutoreplies'])->name('ai.autoreplies.index');
 
     // System
-    Route::get('system/config',         [StubOpsController::class, 'systemConfig'])->name('system.config.index');
-    Route::get('system/notifications',  [StubOpsController::class, 'systemNotifications'])->name('system.notifications.index');
-    Route::get('system/integrations',   [StubOpsController::class, 'systemIntegrations'])->name('system.integrations.index');
-    Route::get('system/api-keys',       [StubOpsController::class, 'systemApiKeys'])->name('system.api-keys.index');
-    Route::get('system/backups',        [StubOpsController::class, 'systemBackups'])->name('system.backups.index');
-    Route::get('system/maintenance',    [StubOpsController::class, 'systemMaintenance'])->name('system.maintenance.index');
+    Route::get('system/config',         [SystemController::class, 'systemConfig'])->name('system.config.index');
+    Route::get('system/notifications',  [SystemController::class, 'systemNotifications'])->name('system.notifications.index');
+    Route::get('system/integrations',   [SystemController::class, 'systemIntegrations'])->name('system.integrations.index');
+    Route::get('system/api-keys',       [SystemController::class, 'systemApiKeys'])->name('system.api-keys.index');
+    Route::get('system/backups',        [SystemController::class, 'systemBackups'])->name('system.backups.index');
+    Route::get('system/maintenance',    [SystemController::class, 'systemMaintenance'])->name('system.maintenance.index');
 });
 Route::controller(SharedController::class)->group(function () {
     Route::get('lang/{locale}', 'lang')->name('lang');
