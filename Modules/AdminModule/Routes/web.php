@@ -6,6 +6,7 @@ use Modules\AdminModule\Http\Controllers\Web\New\Admin\AiController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\DashboardController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\FirebaseSubscribeController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\PlaceholderController;
+use Modules\AdminModule\Http\Controllers\Web\New\Admin\PromotionsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\StubOpsController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\ReportController;
 use Modules\AdminModule\Http\Controllers\Web\New\Admin\SettingController;
@@ -105,12 +106,12 @@ Route::get('/', 'index')->name('root');
         Route::get('event-analytics', 'eventAnalytics')->name('event-analytics.index');
     });
 
-    // Promotions & Partners — real ops pages (no Coming Soon)
-    Route::get('businesses',          [StubOpsController::class, 'businesses'])->name('businesses.index');
-    Route::get('promoted-listings',   [StubOpsController::class, 'promotedListings'])->name('promoted-listings.index');
-    Route::get('ride-incentives',     [StubOpsController::class, 'rideIncentives'])->name('ride-incentives.index');
-    Route::get('promo-performance',   [StubOpsController::class, 'promoPerformance'])->name('promo-performance.index');
-    Route::get('payout-rules',        [StubOpsController::class, 'payoutRules'])->name('payout-rules.index');
+    // Promotions & Partners — real ops pages
+    Route::get('businesses',          [PromotionsController::class, 'businesses'])->name('businesses.index');
+    Route::get('promoted-listings',   [PromotionsController::class, 'promotedListings'])->name('promoted-listings.index');
+    Route::get('ride-incentives',     [PromotionsController::class, 'rideIncentives'])->name('ride-incentives.index');
+    Route::get('promo-performance',   [PromotionsController::class, 'promoPerformance'])->name('promo-performance.index');
+    Route::get('payout-rules',        [PromotionsController::class, 'payoutRules'])->name('payout-rules.index');
 
     // Users
     Route::get('roles',               [StubOpsController::class, 'roles'])->name('roles.index');
