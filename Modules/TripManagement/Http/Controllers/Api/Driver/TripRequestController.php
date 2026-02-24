@@ -603,7 +603,7 @@ if ($trip->cancellation_fee > 0) {
 
             return response()->json(responseFormatter(OTP_MISMATCH_404), 403);
         }
-        // dd($request);
+        $user = auth('api')->user();
         DB::beginTransaction();
         $attributes = [
             'column' => 'id',
