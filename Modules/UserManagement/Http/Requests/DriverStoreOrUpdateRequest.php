@@ -14,7 +14,8 @@ class DriverStoreOrUpdateRequest extends FormRequest
      */
     public function rules()
     {
-        $id = $this->id;
+        // Use route param for update so unique rules exclude the current driver (admin/driver/update/{id})
+        $id = $this->route('id');
         return [
             'first_name' => 'required',
             'last_name' => 'required',
