@@ -110,7 +110,7 @@
                                             @can('user_add')
                                                 <a href="{{ route('admin.driver.quick-add.create') }}" type="button"
                                                    class="btn btn-primary text-capitalize">
-                                                    <i class="bi bi-lightning-charge-fill fs-16 me-1"></i>{{ translate('Quick Add Driver') }}
+                                                    <i class="bi bi-lightning-charge-fill fs-16 me-1"></i>Quick Add Driver
                                                 </a>
                                                 <a href="{{ route('admin.driver.create') }}" type="button"
                                                    class="btn btn-outline-primary text-capitalize">
