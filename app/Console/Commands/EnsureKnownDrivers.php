@@ -39,7 +39,7 @@ class EnsureKnownDrivers extends Command
     public function handle(): int
     {
         $isProduction = app()->environment('production');
-        $force = $this->option('force');
+        $force        = (bool) $this->option('force');
         $includeTest = $this->option('test');
 
         if ($isProduction && !$force) {
@@ -48,9 +48,18 @@ class EnsureKnownDrivers extends Command
         }
 
         $firstLevel = UserLevel::where('user_type', DRIVER)->orderBy('sequence')->first();
-        if (!$firstLevel) {
-            $this->error('No driver level found. Run migrations / seed user_levels.');
-            return self::FAILURE;
+        if (! $firstLevel) {
+            $this->warn('No driver level found. Attempting to create defaults via drivers:ensure-levels.');
+            $code = \Artisan::call('drivers:ensure-levels', $force ? ['--force' => true] : []);
+            if ($code !== self::SUCCESS) {
+                $this->error('drivers:ensure-levels did not complete successfully. Aborting.');
+                return self::FAILURE;
+            }
+            $firstLevel = UserLevel::where('user_type', DRIVER)->orderBy('sequence')->first();
+            if (! $firstLevel) {
+                $this->error('No driver level found even after drivers:ensure-levels. Aborting.');
+                return self::FAILURE;
+            }
         }
 
         $this->ensureDriver(
@@ -58,7 +67,8 @@ class EnsureKnownDrivers extends Command
             self::DANIEL_PASSWORD,
             self::DANIEL_FIRST_NAME,
             self::DANIEL_LAST_NAME,
-            'Daniel Marinelli (primary)'
+            'Daniel Marinelli (primary)',
+            $firstLevel
         );
 
         if ($includeTest) {
@@ -70,7 +80,8 @@ class EnsureKnownDrivers extends Command
                     self::TEST_PASSWORD,
                     self::TEST_FIRST_NAME,
                     self::TEST_LAST_NAME,
-                    'Test driver (fixture)'
+                    'Test driver (fixture)',
+                    $firstLevel
                 );
             }
         } else {
@@ -80,7 +91,7 @@ class EnsureKnownDrivers extends Command
         return self::SUCCESS;
     }
 
-    private function ensureDriver(string $phone, string $password, string $firstName, string $lastName, string $label): void
+    private function ensureDriver(string $phone, string $password, string $firstName, string $lastName, string $label, UserLevel $firstLevel): void
     {
         $normalized = $this->normalizePhone($phone);
         $user = User::where('phone', $normalized)->where('user_type', DRIVER)->first();

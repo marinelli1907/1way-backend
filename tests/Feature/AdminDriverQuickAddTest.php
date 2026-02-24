@@ -20,7 +20,23 @@ class AdminDriverQuickAddTest extends TestCase
         parent::setUp();
         $this->driverLevel = UserLevel::where('user_type', DRIVER)->orderBy('sequence')->first();
         if (! $this->driverLevel) {
-            $this->markTestSkipped('No driver level in DB (run seeders).');
+            $this->driverLevel = UserLevel::create([
+                'sequence'              => 1,
+                'name'                  => 'Test Driver Level',
+                'reward_type'           => 'no_rewards',
+                'reward_amount'         => null,
+                'image'                 => null,
+                'targeted_ride'         => 0,
+                'targeted_ride_point'   => 0,
+                'targeted_amount'       => 0,
+                'targeted_amount_point' => 0,
+                'targeted_cancel'       => 0,
+                'targeted_cancel_point' => 0,
+                'targeted_review'       => 0,
+                'targeted_review_point' => 0,
+                'user_type'             => DRIVER,
+                'is_active'             => 1,
+            ]);
         }
         $this->admin = User::firstOrCreate(
             ['email' => 'admin-quickadd-test@test.local'],
@@ -110,5 +126,38 @@ class AdminDriverQuickAddTest extends TestCase
             ->post(route('admin.driver.quick-add.store'), $payload);
 
         $response->assertSessionHasErrors('phone');
+    }
+
+    public function test_quick_add_bootstraps_driver_level_when_missing(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
+        // Remove any existing driver levels to force bootstrap path
+        UserLevel::where('user_type', DRIVER)->delete();
+
+        $phone = '1555555' . rand(10000, 99999);
+        $email = 'quickadd-bootstrap-' . $phone . '@test.local';
+        $payload = [
+            'first_name'           => 'Bootstrap',
+            'last_name'            => 'AddDriver',
+            'email'                => $email,
+            'phone'                => $phone,
+            'city_region'          => 'Bootstrap City',
+            'driver_split_percent' => '80',
+        ];
+
+        $response = $this->actingAs($this->admin, 'web')
+            ->post(route('admin.driver.quick-add.store'), $payload);
+
+        $response->assertRedirect();
+
+        $this->assertGreaterThan(
+            0,
+            UserLevel::where('user_type', DRIVER)->count(),
+            'drivers:ensure-levels should have created at least one driver level'
+        );
+
+        $driver = User::where('phone', $phone)->where('user_type', DRIVER)->first();
+        $this->assertNotNull($driver, 'Driver should exist in DB after Quick Add with bootstrap');
     }
 }

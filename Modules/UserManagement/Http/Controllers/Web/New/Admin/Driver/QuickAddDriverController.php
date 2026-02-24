@@ -10,6 +10,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -61,10 +63,38 @@ class QuickAddDriverController extends BaseController
             'vehicle_plate'       => 'nullable|string|max:20',
         ]);
 
-        $firstLevel = $this->driverLevelService->findOneBy(['user_type' => DRIVER, 'sequence' => 1]);
+        $firstLevel = $this->driverLevelService->findOneBy(
+            criteria: ['user_type' => DRIVER],
+            orderBy: ['sequence' => 'asc']
+        );
+
         if (! $firstLevel) {
-            Toastr::error('Please create at least one Driver Level before adding drivers.');
-            return back()->withInput()->with('error', 'No driver level found.');
+            $isProduction = App::environment('production');
+
+            if (! $isProduction) {
+                // In non-production, auto-bootstrap driver levels via artisan command.
+                try {
+                    Artisan::call('drivers:ensure-levels');
+                } catch (\Throwable $e) {
+                    Log::error('QuickAddDriver ensure-levels failed: ' . $e->getMessage(), [
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                }
+
+                $firstLevel = $this->driverLevelService->findOneBy(
+                    criteria: ['user_type' => DRIVER],
+                    orderBy: ['sequence' => 'asc']
+                );
+            }
+
+            if (! $firstLevel) {
+                $message = $isProduction
+                    ? 'No driver level found. Ask ops to run: php artisan drivers:ensure-levels --force'
+                    : 'No driver level found and auto-bootstrap failed. Please create a Driver Level from Admin → Driver Levels.';
+
+                Toastr::error('Please create at least one Driver Level before adding drivers.');
+                return back()->withInput()->with('error', $message);
+            }
         }
 
         DB::beginTransaction();

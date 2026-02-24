@@ -20,8 +20,24 @@ class AdminDriverCreateUpdateTest extends TestCase
     {
         parent::setUp();
         $this->driverLevel = UserLevel::where('user_type', DRIVER)->orderBy('sequence')->first();
-        if (!$this->driverLevel) {
-            $this->markTestSkipped('No driver level in DB (run seeders).');
+        if (! $this->driverLevel) {
+            $this->driverLevel = UserLevel::create([
+                'sequence'              => 1,
+                'name'                  => 'Test Driver Level',
+                'reward_type'           => 'no_rewards',
+                'reward_amount'         => null,
+                'image'                 => null,
+                'targeted_ride'         => 0,
+                'targeted_ride_point'   => 0,
+                'targeted_amount'       => 0,
+                'targeted_amount_point' => 0,
+                'targeted_cancel'       => 0,
+                'targeted_cancel_point' => 0,
+                'targeted_review'       => 0,
+                'targeted_review_point' => 0,
+                'user_type'             => DRIVER,
+                'is_active'             => 1,
+            ]);
         }
         $this->admin = User::firstOrCreate(
             ['email' => 'admin-driver-test@test.local'],
@@ -73,9 +89,25 @@ class AdminDriverCreateUpdateTest extends TestCase
     {
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 
-        $driver = User::where('user_type', DRIVER)->first();
-        if (!$driver) {
-            $this->markTestSkipped('No driver in DB to update.');
+        $driver = User::where('user_type', DRIVER)
+            ->whereNotNull('email')
+            ->first();
+
+        if (! $driver) {
+            $phone = '1555555' . rand(2000, 9999);
+            $driver = User::create([
+                'user_level_id'         => $this->driverLevel->id,
+                'first_name'            => 'Initial',
+                'last_name'             => 'Driver',
+                'full_name'             => 'Initial Driver',
+                'email'                 => 'driver-update-' . $phone . '@test.local',
+                'phone'                 => $phone,
+                'identification_type'   => 'passport',
+                'identification_number' => 'ID' . $phone,
+                'password'              => Hash::make('password'),
+                'user_type'             => DRIVER,
+                'is_active'             => 1,
+            ]);
         }
 
         $newFirstName = 'UpdatedFirst';
