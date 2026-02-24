@@ -17,6 +17,21 @@
             </a>
         </div>
 
+        @if($errors->any() || session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                @if($errors->any())
+                    <ul class="mb-0">
+                        @foreach($errors->all() as $err)
+                            <li>{{ $err }}</li>
+                        @endforeach
+                    </ul>
+                @else
+                    {{ session('error') }}
+                @endif
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        @endif
+
         <form action="{{ route('admin.driver.quick-add.store') }}" method="POST" id="quickAddForm">
             @csrf
 

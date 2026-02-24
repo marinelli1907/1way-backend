@@ -43,11 +43,16 @@ class QuickAddDriverController extends BaseController
     {
         $this->authorize('user_add');
 
+        // Normalize phone to digits-only for consistent uniqueness and storage
+        $request->merge([
+            'phone' => preg_replace('/\D/', '', $request->input('phone', '')),
+        ]);
+
         $data = $request->validate([
             'first_name'          => 'required|string|max:100',
             'last_name'           => 'required|string|max:100',
             'email'               => 'required|email|unique:users,email',
-            'phone'               => 'required|string|max:20',
+            'phone'               => 'required|string|min:8|max:20|unique:users,phone',
             'city_region'         => 'nullable|string|max:120',
             'driver_split_percent'=> 'nullable|numeric|min:0|max:100',
             'vehicle_make'        => 'nullable|string|max:100',
@@ -58,8 +63,8 @@ class QuickAddDriverController extends BaseController
 
         $firstLevel = $this->driverLevelService->findOneBy(['user_type' => DRIVER, 'sequence' => 1]);
         if (! $firstLevel) {
-            Toastr::error(translate('Please create at least one Driver Level before adding drivers.'));
-            return back()->withInput();
+            Toastr::error('Please create at least one Driver Level before adding drivers.');
+            return back()->withInput()->with('error', 'No driver level found.');
         }
 
         DB::beginTransaction();
@@ -77,15 +82,18 @@ class QuickAddDriverController extends BaseController
                 'driver_split_percent' => $data['driver_split_percent'] ?? 80,
                 'password'             => Hash::make($tempPassword),
                 'user_type'            => DRIVER,
-                'is_active'            => true,
-                'ref_code'             => Str::upper(Str::random(8)),
+                'is_active'            => 1,
+                'ref_code'             => generateReferralCode(),
             ]);
 
-            // Create blank driver details
+            // Create blank driver details (required for driver flows)
             $driver->driverDetails()->create([
                 'is_online'           => false,
                 'availability_status' => 'unavailable',
             ]);
+
+            // Create user account (required for payouts/balance like full Add Driver flow)
+            $driver->userAccount()->create();
 
             // Create blank onboarding checklist
             DriverOnboardingStatus::create([
@@ -101,20 +109,23 @@ class QuickAddDriverController extends BaseController
 
             DB::commit();
 
-            // Try to send invite email
+            // Try to send invite email (non-blocking)
             $inviteUrl = $invite->inviteUrl();
             $this->sendInviteEmail($driver, $inviteUrl, $tempPassword);
 
-            Toastr::success(translate('Driver created! Invite link generated.'));
+            Toastr::success('Driver created! Invite link generated.');
             return redirect()->route('admin.driver.quick-add.show', $driver->id)
                 ->with('invite_url', $inviteUrl)
                 ->with('temp_password', $tempPassword);
 
         } catch (\Throwable $e) {
             DB::rollBack();
-            Log::error('QuickAddDriver error: ' . $e->getMessage());
-            Toastr::error(translate('Something went wrong. Please try again.'));
-            return back()->withInput();
+            Log::error('QuickAddDriver error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'input' => $request->except(['_token']),
+            ]);
+            Toastr::error('Something went wrong. Please try again.');
+            return back()->withInput()->with('error', 'Could not create driver: ' . $e->getMessage());
         }
     }
 
