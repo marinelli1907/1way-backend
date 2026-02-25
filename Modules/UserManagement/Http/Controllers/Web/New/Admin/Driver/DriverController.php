@@ -68,18 +68,47 @@ class DriverController extends BaseController
     public function store(DriverStoreOrUpdateRequest $request): RedirectResponse
     {
         $this->authorize('user_add');
+
         $firstLevel = $this->driverLevelService->findOneBy(criteria: ['user_type' => DRIVER, 'sequence' => 1]);
+
         if (!$firstLevel) {
-            Toastr::error(LEVEL_403['message']);
-            return back();
+            $firstLevel = $this->driverLevelService->findOneBy(
+                criteria: ['user_type' => DRIVER],
+                orderBy: ['sequence' => 'asc']
+            );
         }
-        $request->merge([
-            'user_level_id' => $firstLevel->id
-        ]);
-        $this->driverService->create(data: $request->validated());
+
+        if (!$firstLevel) {
+            try {
+                \Illuminate\Support\Facades\Artisan::call('drivers:ensure-levels');
+                $firstLevel = $this->driverLevelService->findOneBy(
+                    criteria: ['user_type' => DRIVER],
+                    orderBy: ['sequence' => 'asc']
+                );
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::error('Add Driver ensure-levels failed: ' . $e->getMessage());
+            }
+        }
+
+        if (!$firstLevel) {
+            Toastr::error('No driver levels found. Please create one first or run: php artisan drivers:ensure-levels --force');
+            return back()->withInput();
+        }
+
+        $request->merge(['user_level_id' => $firstLevel->id]);
+
+        try {
+            $this->driverService->create(data: $request->validated());
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Add Driver error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            Toastr::error('Failed to create driver: ' . $e->getMessage());
+            return back()->withInput();
+        }
+
         Toastr::success(DRIVER_STORE_200['message']);
         return redirect(route('admin.driver.index'));
-
     }
 
     public function show($id, Request $request): Renderable|RedirectResponse

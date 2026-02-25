@@ -19,6 +19,35 @@ class ApiPhase4SmokeTest extends TestCase
         $this->artisan('passport:client', ['--personal' => true, '--name' => 'Test Personal Access Client']);
     }
 
+
+    /**
+     * POST /api/customer/auth/login accepts email and formatted phone.
+     */
+    public function test_customer_login_accepts_email_or_phone_variants(): void
+    {
+        $user = User::create([
+            'first_name' => 'Test',
+            'last_name' => 'Customer',
+            'phone' => '+1 (555) 123-4567',
+            'email' => 'customer-variant@test.example',
+            'password' => Hash::make('password'),
+            'user_type' => 'customer',
+            'is_active' => 1,
+        ]);
+
+        $byEmail = $this->postJson('/api/customer/auth/login', [
+            'phone_or_email' => $user->email,
+            'password' => 'password',
+        ]);
+        $byEmail->assertStatus(200);
+
+        $byPhoneDigits = $this->postJson('/api/customer/auth/login', [
+            'phone_or_email' => '15551234567',
+            'password' => 'password',
+        ]);
+        $byPhoneDigits->assertStatus(200);
+    }
+
     /**
      * POST /api/customer/auth/login with valid credentials returns 200 and token shape.
      */

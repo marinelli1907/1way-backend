@@ -9,6 +9,7 @@ use Modules\BusinessManagement\Repository\SettingRepositoryInterface;
 use Modules\Gateways\Traits\SmsGateway;
 use Modules\UserManagement\Repository\OtpVerificationRepositoryInterface;
 use Modules\UserManagement\Repository\UserRepositoryInterface;
+use Modules\UserManagement\Entities\User;
 
 class AuthService extends BaseService implements Interface\AuthServiceInterface
 {
@@ -29,12 +30,64 @@ class AuthService extends BaseService implements Interface\AuthServiceInterface
     public function checkClientRoute($request)
     {
         $route = str_contains($request->route()?->getPrefix(), 'customer');
-        if ($route) {
-            $user = $this->userRepository->findOneBy(criteria: ['phone' => $request->phone_or_email, 'user_type' => CUSTOMER]);
-        } else {
-            $user = $this->userRepository->findOneBy(criteria: ['phone' => $request->phone_or_email, 'user_type' => DRIVER]);
+        $userType = $route ? CUSTOMER : DRIVER;
+        $login = trim((string) ($request->phone_or_email ?? ''));
+
+        if ($login === '') {
+            return null;
         }
-        return $user;
+
+        // 1) Exact phone match first for backward compatibility.
+        $user = $this->userRepository->findOneBy(criteria: [
+            'phone' => $login,
+            'user_type' => $userType,
+        ]);
+        if ($user) {
+            return $user;
+        }
+
+        // 2) If input is an email, allow email-based login.
+        if (filter_var($login, FILTER_VALIDATE_EMAIL)) {
+            $user = $this->userRepository->findOneBy(criteria: [
+                'email' => strtolower($login),
+                'user_type' => $userType,
+            ]);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        // 3) Try normalized phone variants (spaces/dashes/parentheses/+ differences).
+        $digits = preg_replace('/\D+/', '', $login);
+        $normalized = preg_replace('/[^\d+]/', '', $login);
+        $candidates = array_values(array_unique(array_filter([
+            $normalized,
+            $digits,
+            $digits !== '' ? '+' . $digits : null,
+        ])));
+
+        foreach ($candidates as $candidate) {
+            $user = $this->userRepository->findOneBy(criteria: [
+                'phone' => $candidate,
+                'user_type' => $userType,
+            ]);
+            if ($user) {
+                return $user;
+            }
+        }
+
+        // 4) Database-level normalized phone comparison fallback.
+        if ($digits !== '') {
+            $user = User::query()
+                ->where('user_type', $userType)
+                ->whereRaw("REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(phone, ' ', ''), '-', ''), '(', ''), ')', ''), '+', '') = ?", [$digits])
+                ->first();
+            if ($user) {
+                return $user;
+            }
+        }
+
+        return null;
     }
 
     private function generateOtp($user, $otp)

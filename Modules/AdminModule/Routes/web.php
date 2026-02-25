@@ -73,8 +73,14 @@ Route::get('/', 'index')->name('root');
     });
     Route::controller(SettingController::class)->group(function () {
         Route::get('settings', 'index')->name('settings');
+        Route::get('profile-settings', 'index')->name('profile-settings');
         Route::post('update-profile/{id}', 'update')->name('update-profile');
     });
+
+    // Alias so topbar link admin.business.setting resolves
+    Route::get('business-setting', function() {
+        return redirect()->route('admin.business.setup.info.settings');
+    })->name('business.setting');
     Route::controller(SharedController::class)->group(function () {
         Route::get('seen-notification', 'seenNotification')->name('seen-notification');
         Route::get('get-notifications', 'getNotifications')->name('get-notifications');

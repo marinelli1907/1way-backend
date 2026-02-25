@@ -127,5 +127,25 @@
 </script>
 
 @stack('script')
+
+{{-- A3: Sidebar scroll persistence + active state --}}
+<script>
+(function() {
+    var aside = document.querySelector('.oneway-aside__nav');
+    if (!aside) return;
+    var key = 'ow_sidebar_scroll';
+    var saved = sessionStorage.getItem(key);
+    if (saved) aside.scrollTop = parseInt(saved, 10);
+    aside.addEventListener('scroll', function() {
+        sessionStorage.setItem(key, aside.scrollTop);
+    });
+
+    // Ensure active link is visible
+    var activeLink = aside.querySelector('.oneway-nav__link.active');
+    if (activeLink) {
+        setTimeout(function() { activeLink.scrollIntoView({block: 'nearest', behavior: 'auto'}); }, 50);
+    }
+})();
+</script>
 </body>
 </html>

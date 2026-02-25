@@ -2731,4 +2731,5 @@
   'Role' => 'Role',
   'Make' => 'Make',
   'waitlist' => 'Waitlist',
+  'The selected zone id is invalid.' => 'The selected zone id is invalid.',
 );
