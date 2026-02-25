@@ -2732,4 +2732,5 @@
   'Make' => 'Make',
   'waitlist' => 'Waitlist',
   'The selected zone id is invalid.' => 'The selected zone id is invalid.',
+  'File Format - jpg  png  jpeg  webp' => 'File Format - jpg  png  jpeg  webp',
 );
