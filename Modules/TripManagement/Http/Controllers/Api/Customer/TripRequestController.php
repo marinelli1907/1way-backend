@@ -28,6 +28,7 @@ use Modules\TripManagement\Entities\RecentAddress;
 use Modules\TripManagement\Entities\TripRequestTime;
 use Modules\ZoneManagement\Interfaces\ZoneInterface;
 use App\Events\CustomerTripCancelledAfterOngoingEvent;
+use App\Services\Flights\TripFlightDetailService;
 use Modules\TripManagement\Lib\CouponCalculationTrait;
 use Modules\UserManagement\Interfaces\DriverInterface;
 use Modules\UserManagement\Lib\LevelUpdateCheckerTrait;
@@ -72,6 +73,7 @@ class TripRequestController extends Controller
         private ParcelWeightRepository         $parcel_weight,
         private CoupounInterface               $coupon,
         private ZoneServiceInterface           $zoneService,
+        private TripFlightDetailService        $tripFlightDetailService,
     )
     {
     }
@@ -306,6 +308,12 @@ class TripRequestController extends Controller
             // Encoded Polyline and Zone Information
             'encoded_polyline' => 'sometimes',
             'zone_id' => 'required|integer|exists:zones,id',
+            'ride_airport_mode' => 'sometimes|nullable|in:airport_pickup,airport_dropoff',
+            'flight_input_type' => 'required_with:ride_airport_mode|nullable|in:flight_number,reservation',
+            'flight_number' => 'required_if:flight_input_type,flight_number|nullable|string|max:30',
+            'flight_date' => 'required_if:flight_input_type,flight_number|nullable|date_format:Y-m-d',
+            'reservation_code' => 'required_if:flight_input_type,reservation|nullable|string|max:30',
+            'last_name' => 'required_if:flight_input_type,reservation|nullable|string|max:120',
 
         ]);
 
@@ -474,6 +482,19 @@ class TripRequestController extends Controller
                 $save_trip->save();
             }
             $final = $this->trip->getBy(column: 'id', value: $tripDiscount->id, attributes: ['relations' => 'driver.lastLocations', 'time', 'coordinate', 'fee', 'parcelRefund']);
+        }
+
+        $flightContext = $this->tripFlightDetailService->extractContext($request->all());
+        if ($flightContext) {
+            try {
+                $this->tripFlightDetailService->attachToTrip($save_trip->id, $flightContext);
+                $final->loadMissing('flightDetail');
+            } catch (\Throwable $e) {
+                \Illuminate\Support\Facades\Log::warning('Trip flight attach failed', [
+                    'trip_id' => $save_trip->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
 
         $search_radius = (double)get_cache('search_radius') ?? 5;
@@ -1006,7 +1027,7 @@ class TripRequestController extends Controller
         $attributes = [
             'relations' => [
                 'driver', 'vehicle.model', 'vehicleCategory', 'tripStatus',
-                'coordinate', 'fee', 'time', 'parcel', 'parcelUserInfo', 'parcelRefund'
+                'coordinate', 'fee', 'time', 'parcel', 'parcelUserInfo', 'parcelRefund', 'flightDetail'
             ],
             'withAvgRelation' => 'driverReceivedReviews',
             'withAvgColumn' => 'rating'
@@ -1063,7 +1084,7 @@ class TripRequestController extends Controller
             $attributes['column_name'] = 'current_status';
             $attributes['column_value'] = [$request->status];
         }
-        $relations = ['driver', 'vehicle.model', 'vehicleCategory', 'time', 'coordinate', 'fee', 'parcel.parcelCategory', 'parcelRefund'];
+        $relations = ['driver', 'vehicle.model', 'vehicleCategory', 'time', 'coordinate', 'fee', 'parcel.parcelCategory', 'parcelRefund', 'flightDetail'];
         $data = $this->trip->get(limit: $request['limit'], offset: $request['offset'], dynamic_page: true, attributes: $attributes, relations: $relations);
         $resource = TripRequestResource::setData('distance_wise_fare')::collection($data);
 
@@ -1613,7 +1634,7 @@ private function getResumeRide(): mixed
             'withAvgRelation' => 'driverReceivedReviews',
             'withAvgColumn' => 'rating',
             'relations' => ['customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
-                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo', 'customerReceivedReviews', 'driverReceivedReviews']
+                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo', 'customerReceivedReviews', 'driverReceivedReviews', 'flightDetail']
         ]);
         return $trip;
     }

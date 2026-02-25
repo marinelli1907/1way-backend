@@ -35,7 +35,13 @@ class RideRequestCreate extends FormRequest
             'receiver_address' => 'required_if:type,==,parcel',
             'parcel_category_id' => 'required_if:type,==,parcel',
             'weight' => 'required_if:type,==,parcel',
-            'payer' => 'required_if:type,==,parcel'
+            'payer' => 'required_if:type,==,parcel',
+            'ride_airport_mode' => 'sometimes|nullable|in:airport_pickup,airport_dropoff',
+            'flight_input_type' => 'required_with:ride_airport_mode|nullable|in:flight_number,reservation',
+            'flight_number' => 'required_if:flight_input_type,flight_number|nullable|string|max:30',
+            'flight_date' => 'required_if:flight_input_type,flight_number|nullable|date_format:Y-m-d',
+            'reservation_code' => 'required_if:flight_input_type,reservation|nullable|string|max:30',
+            'last_name' => 'required_if:flight_input_type,reservation|nullable|string|max:120'
         ];
     }
 

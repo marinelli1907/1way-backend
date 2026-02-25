@@ -732,7 +732,7 @@ if ($trip->cancellation_fee > 0) {
             $attributes['column_name'] = 'current_status';
             $attributes['column_value'] = [$request->status];
         }
-        $relations = ['customer', 'vehicle.model', 'vehicleCategory', 'time', 'coordinate', 'fee', 'parcel.parcelCategory', 'parcelRefund'];
+        $relations = ['customer', 'vehicle.model', 'vehicleCategory', 'time', 'coordinate', 'fee', 'parcel.parcelCategory', 'parcelRefund', 'flightDetail'];
         $data = $this->trip->get(limit: $request['limit'], offset: $request['offset'], dynamic_page: true, attributes: $attributes, relations: $relations);
 
         $resource = TripRequestResource::setData('distance_wise_fare')::collection($data);
@@ -1118,7 +1118,7 @@ DB::commit();
     private function rideOverview($trip_request_id, $status): mixed
     {
         return $this->trip->getBy(column: 'id', value: $trip_request_id, attributes: [
-            'relations' => ['customer', 'vehicleCategory', 'tripStatus', 'time', 'coordinate', 'fee', 'parcel', 'parcelUserInfo', 'parcelRefund'],
+            'relations' => ['customer', 'vehicleCategory', 'tripStatus', 'time', 'coordinate', 'fee', 'parcel', 'parcelUserInfo', 'parcelRefund', 'flightDetail'],
             'fare_biddings' => auth()->id(),
             'column_name' => 'current_status',
             'column_value' => $status,
@@ -1134,7 +1134,7 @@ DB::commit();
     private function rideDetailsFormation($trip_request_id): mixed
     {
         return $this->trip->getBy(column: 'id', value: $trip_request_id, attributes: [
-            'relations' => ['customer', 'vehicleCategory', 'tripStatus', 'time', 'coordinate', 'fee', 'parcel', 'parcelUserInfo', 'parcelRefund'],
+            'relations' => ['customer', 'vehicleCategory', 'tripStatus', 'time', 'coordinate', 'fee', 'parcel', 'parcelUserInfo', 'parcelRefund', 'flightDetail'],
             'withAvgRelation' => 'customerReceivedReviews',
             'withAvgColumn' => 'rating'
         ]);
@@ -1152,7 +1152,7 @@ DB::commit();
             "type" => "ride_request",
             "column" => "driver_id",
             "value" => $driverId,
-            "relations" => ["tripStatus","customer","driver","time","coordinate","fee","parcelRefund"],
+            "relations" => ["tripStatus","customer","driver","time","coordinate","fee","parcelRefund","flightDetail"],
         ];
 
         $tripRequest = $this->trip->getIncompleteRide($attributes);

@@ -24,7 +24,7 @@ class TripRequestController extends Controller
 
     public function currentRideStatus()
     {
-        $relations = ['tripStatus', 'customer', 'driver', 'time', 'coordinate', 'time', 'fee', 'parcelRefund'];
+        $relations = ['tripStatus', 'customer', 'driver', 'time', 'coordinate', 'time', 'fee', 'parcelRefund', 'flightDetail'];
         $baseCriteria = ['type' => 'ride_request', 'driver_id' => auth('api')->id()];
         $orderBy = ['created_at' => 'desc'];
         $withAvgRelations = [['customerReceivedReviews', 'rating']];

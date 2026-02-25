@@ -248,7 +248,7 @@ class TripRequestController extends Controller
             $criteria['current_status'] = [$request->status];
         }
 
-        $relations = ['driver', 'vehicle.model', 'vehicleCategory', 'time', 'coordinate', 'fee'];
+        $relations = ['driver', 'vehicle.model', 'vehicleCategory', 'time', 'coordinate', 'fee', 'flightDetail'];
         $data = $this->tripRequestservice->getWithAvg(criteria: $criteria, limit: $request['limit'], offset: $request['offset'], relations: $relations, withAvgRelation: ['driverReceivedReviews', 'rating'], whereBetweenCriteria: $whereBetweenCriteria);
         $resource = TripRequestResource::setData('distance_wise_fare')::collection($data);
 
@@ -261,7 +261,7 @@ class TripRequestController extends Controller
 
         $data = $this->tripRequestservice->findOneWithAvg(criteria: ['id' => $trip_request_id], relations: [
             'driver', 'vehicle.model', 'vehicleCategory', 'tripStatus',
-            'coordinate', 'fee', 'time', 'parcel', 'parcelUserInfo'
+            'coordinate', 'fee', 'time', 'parcel', 'parcelUserInfo', 'flightDetail'
         ], withAvgRelation: ['customerReceivedReviews', 'rating']);
         if (!$data) {
 

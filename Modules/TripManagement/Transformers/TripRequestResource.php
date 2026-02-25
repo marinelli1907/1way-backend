@@ -2,6 +2,7 @@
 
 namespace Modules\TripManagement\Transformers;
 
+use App\Services\Flights\TripFlightDetailService;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Modules\ParcelManagement\Transformers\InformationResource;
@@ -83,6 +84,12 @@ class TripRequestResource extends JsonResource
             'driver_safety_alert' => SafetyAlertResource::make($this->driverSafetyAlert),
             'customer_safety_alert' => SafetyAlertResource::make($this->customerSafetyAlert),
         ];
+
+        if ($this->relationLoaded('flightDetail') && $this->flightDetail) {
+            $trip_request['flight'] = app(TripFlightDetailService::class)->formatForApi($this->flightDetail);
+        } else {
+            $trip_request['flight'] = null;
+        }
 
         $coordinate = [];
         if ($this->coordinate()->exists()) {

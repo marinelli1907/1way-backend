@@ -882,6 +882,7 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             );
         }
 
+        $save_trip->loadMissing('flightDetail');
         $trip = new TripRequestResource($save_trip);
         return $trip;
     }
@@ -1066,7 +1067,7 @@ $authId = auth("api")->id();
     {
         $trip = $this->tripRequestRepository->findOneBy(criteria: ['customer_id' => auth()->id()], relations: [
             'customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
-            'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo'
+            'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo', 'flightDetail'
         ]);
 
         if (
@@ -1084,7 +1085,7 @@ $authId = auth("api")->id();
 
     public function getDriverIncompleteRide(): mixed
     {
-        $trip = $this->findOneWithAvg(criteria: ['driver_id' => auth()->guard('api')->id()], relations: ['tripStatus', 'customer', 'driver', 'time', 'coordinate', 'time', 'fee'], withAvgRelation: ['customerReceivedReviews', 'rating']);
+        $trip = $this->findOneWithAvg(criteria: ['driver_id' => auth()->guard('api')->id()], relations: ['tripStatus', 'customer', 'driver', 'time', 'coordinate', 'time', 'fee', 'flightDetail'], withAvgRelation: ['customerReceivedReviews', 'rating']);
 
         if (
             !$trip || $trip->fee->cancelled_by == 'driver' ||

@@ -107,7 +107,7 @@ class TripController extends BaseController
     {
         $this->authorize('trip_view');
 
-        $trip = $this->tripRequestService->findOne(id: $id, relations: ['customer', 'driver', 'tripStatus', 'parcelRefund.refundProofs', 'parcel.parcelCategory'], withTrashed: true);
+        $trip = $this->tripRequestService->findOne(id: $id, relations: ['customer', 'driver', 'tripStatus', 'parcelRefund.refundProofs', 'parcel.parcelCategory', 'flightDetail'], withTrashed: true);
         $safetyAlerts = $this->safetyAlertService->getBy(criteria: ['trip_request_id' => $id], relations: ['sentBy', 'solvedBy', 'trip', 'lastLocation'], orderBy: ['created_at' => 'desc']);
         if (!$trip) {
             Toastr::error(TRIP_REQUEST_404['message']);

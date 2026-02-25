@@ -122,6 +122,29 @@
                             </div>
                         @endif
                         {{-- END RIDER NOT FOUND --}}
+                        @if($trip->flightDetail)
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between flex-wrap gap-2 mb-3">
+                                            <h6 class="mb-0">{{ translate('flight_card') }}</h6>
+                                            <span class="badge bg-info text-uppercase">{{ $trip->flightDetail->status ?? 'n/a' }}</span>
+                                        </div>
+                                        <div class="row g-2 fs-12">
+                                            <div class="col-md-6"><strong>{{ translate('flight') }}:</strong> {{ $trip->flightDetail->flight_number ?? 'N/A' }}</div>
+                                            <div class="col-md-6"><strong>{{ translate('provider') }}:</strong> {{ $trip->flightDetail->provider ?? 'N/A' }}</div>
+                                            <div class="col-md-6"><strong>{{ translate('airline') }}:</strong> {{ $trip->flightDetail->airline_name ?? $trip->flightDetail->airline_code ?? 'N/A' }}</div>
+                                            <div class="col-md-6"><strong>{{ translate('route') }}:</strong> {{ ($trip->flightDetail->dep_airport_iata ?? 'N/A') . ' → ' . ($trip->flightDetail->arr_airport_iata ?? 'N/A') }}</div>
+                                            <div class="col-md-6"><strong>{{ translate('terminal') }}:</strong> {{ $trip->flightDetail->terminal ?? 'N/A' }}</div>
+                                            <div class="col-md-6"><strong>{{ translate('gate') }}:</strong> {{ $trip->flightDetail->gate ?? 'N/A' }}</div>
+                                            <div class="col-md-6"><strong>{{ translate('baggage') }}:</strong> {{ $trip->flightDetail->baggage ?? 'N/A' }}</div>
+                                            <div class="col-md-6"><strong>{{ translate('last_updated') }}:</strong> {{ $trip->flightDetail->last_synced_at ? date('d F Y, h:i a', strtotime($trip->flightDetail->last_synced_at)) : 'N/A' }}</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+
                         @if($trip->trip_cancellation_reason)
                             <div class="col-12">
                                 <div class="card">

@@ -24,6 +24,7 @@ use Modules\UserManagement\Entities\User;
 use Modules\VehicleManagement\Entities\Vehicle;
 use Modules\VehicleManagement\Entities\VehicleCategory;
 use Modules\ZoneManagement\Entities\Zone;
+use Modules\TripManagement\Entities\TripFlightDetail;
 
 class TripRequest extends Model
 {
@@ -257,6 +258,11 @@ class TripRequest extends Model
     public function parcelUserInfo()
     {
         return $this->hasMany(ParcelUserInfomation::class, 'trip_request_id');
+    }
+
+    public function flightDetail()
+    {
+        return $this->hasOne(TripFlightDetail::class, 'trip_request_id');
     }
 
     public function scopeType($query, $type)

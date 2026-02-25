@@ -7,6 +7,7 @@ use Modules\TripManagement\Http\Controllers\Api\Customer\TripRequestController;
 use Modules\TripManagement\Http\Controllers\Api\New\Customer\SafetyAlertController;
 use Modules\TripManagement\Http\Controllers\Api\New\Customer\ParcelRefundController;
 use Modules\TripManagement\Http\Controllers\Api\Driver\TripRequestController as DriverTripController;
+use Modules\TripManagement\Http\Controllers\Api\Customer\FlightController;
 
 /**
  * CUSTOMER API LIST
@@ -45,6 +46,11 @@ Route::group(['prefix' => 'customer', 'middleware' => ['auth:api', 'maintenance_
             });
         });
     });
+    Route::controller(FlightController::class)->group(function () {
+        Route::post('flights/lookup', 'lookup');
+        Route::get('ride/{trip_request_id}/flight.ics', 'ics');
+    });
+
     Route::group(['prefix' => 'safety-alert'], function () {
         Route::controller(SafetyAlertController::class)->group(function () {
             Route::post('store', 'storeSafetyAlert');
