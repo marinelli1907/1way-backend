@@ -59,6 +59,47 @@
                                                    placeholder="{{ translate('ex') }}: {{ translate('Dhanmondi') }}">
                                         </div>
 
+                                        {{-- Zone creation mode selector --}}
+                                        <div class="mb-3">
+                                            <label class="form-label fw-semibold">{{ translate('Zone Creation Method') }}</label>
+                                            <div class="d-flex gap-3">
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="zone_method" id="methodDraw" value="draw" checked>
+                                                    <label class="form-check-label" for="methodDraw">{{ translate('Draw Polygon on Map') }}</label>
+                                                </div>
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="zone_method" id="methodBoundary" value="boundary">
+                                                    <label class="form-check-label" for="methodBoundary">{{ translate('Search Boundary (City/Zip/County/State)') }}</label>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Boundary search panel (hidden by default) --}}
+                                        <div id="boundaryPanel" class="mb-3" style="display:none;">
+                                            <div class="row g-2 align-items-end">
+                                                <div class="col-auto">
+                                                    <label class="form-label small">{{ translate('Type') }}</label>
+                                                    <select id="boundaryType" class="form-select form-select-sm">
+                                                        <option value="city">{{ translate('City') }}</option>
+                                                        <option value="zip">{{ translate('Zip Code') }}</option>
+                                                        <option value="county">{{ translate('County') }}</option>
+                                                        <option value="state">{{ translate('State') }}</option>
+                                                    </select>
+                                                </div>
+                                                <div class="col">
+                                                    <label class="form-label small">{{ translate('Search') }}</label>
+                                                    <input type="text" id="boundaryQuery" class="form-control form-control-sm"
+                                                           placeholder="{{ translate('e.g. Cleveland, 44101, Cuyahoga...') }}">
+                                                </div>
+                                                <div class="col-auto">
+                                                    <button type="button" id="boundarySearchBtn" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-search me-1"></i>{{ translate('Search') }}
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            <div id="boundaryResults" class="mt-2"></div>
+                                        </div>
+
                                         <div class="form-group mb-3 d-none">
                                             <label class="input-label"
                                                    for="coordinates">{{ translate('coordinates') }}
@@ -710,6 +751,131 @@
             extraFareSetupAlert(this);
             $("#zoneExtraFareSetupModal").modal('show');
         });
+
+        // ── Boundary Lookup ────────────────────────────────────────────
+        const boundaryPanel    = document.getElementById('boundaryPanel');
+        const boundaryResults  = document.getElementById('boundaryResults');
+        const boundarySearchUrl = '{{ route("admin.zone.boundary-search") }}';
+
+        document.querySelectorAll('input[name="zone_method"]').forEach(radio => {
+            radio.addEventListener('change', function () {
+                boundaryPanel.style.display = this.value === 'boundary' ? '' : 'none';
+                if (this.value === 'draw') {
+                    drawingManager.setMap(map);
+                } else {
+                    drawingManager.setMap(null);
+                }
+            });
+        });
+
+        document.getElementById('boundarySearchBtn').addEventListener('click', fetchBoundaries);
+        document.getElementById('boundaryQuery').addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') { e.preventDefault(); fetchBoundaries(); }
+        });
+
+        function fetchBoundaries() {
+            const q    = document.getElementById('boundaryQuery').value.trim();
+            const type = document.getElementById('boundaryType').value;
+            if (q.length < 2) {
+                toastr.warning('{{ translate("Please enter at least 2 characters") }}');
+                return;
+            }
+            boundaryResults.innerHTML = '<div class="text-muted small py-2"><i class="bi bi-hourglass-split me-1"></i>{{ translate("Searching...") }}</div>';
+
+            fetch(boundarySearchUrl + '?q=' + encodeURIComponent(q) + '&type=' + encodeURIComponent(type))
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.results || data.results.length === 0) {
+                        boundaryResults.innerHTML = '<div class="alert alert-warning py-2 small mb-0">{{ translate("No boundaries found. Try a different search term.") }}</div>';
+                        return;
+                    }
+                    let html = '<div class="list-group">';
+                    data.results.forEach((item, idx) => {
+                        html += '<div class="list-group-item d-flex justify-content-between align-items-start py-2">'
+                              +   '<div class="small me-2" style="word-break:break-word;">' + escapeHtml(item.display_name) + '</div>'
+                              +   '<button type="button" class="btn btn-sm btn-primary flex-shrink-0 boundary-use-btn" data-idx="' + idx + '">{{ translate("Use Boundary") }}</button>'
+                              + '</div>';
+                    });
+                    html += '</div>';
+                    boundaryResults.innerHTML = html;
+
+                    window._boundaryResults = data.results;
+
+                    boundaryResults.querySelectorAll('.boundary-use-btn').forEach(btn => {
+                        btn.addEventListener('click', function () {
+                            const idx = parseInt(this.dataset.idx);
+                            applyBoundary(window._boundaryResults[idx]);
+                        });
+                    });
+                })
+                .catch(() => {
+                    boundaryResults.innerHTML = '<div class="alert alert-danger py-2 small mb-0">{{ translate("Search failed. Please try again.") }}</div>';
+                });
+        }
+
+        function applyBoundary(item) {
+            if (lastPolygon) {
+                lastPolygon.setMap(null);
+                lastPolygon = null;
+            }
+
+            const geojson = item.geojson;
+            let rings = [];
+
+            if (geojson.type === 'Polygon') {
+                rings = [geojson.coordinates[0]];
+            } else if (geojson.type === 'MultiPolygon') {
+                let largest = geojson.coordinates[0];
+                geojson.coordinates.forEach(poly => {
+                    if (poly[0].length > largest[0].length) largest = poly;
+                });
+                rings = [largest[0]];
+            }
+
+            if (rings.length === 0 || rings[0].length < 3) {
+                toastr.error('{{ translate("Invalid boundary polygon") }}');
+                return;
+            }
+
+            const path = rings[0].map(coord => new google.maps.LatLng(coord[1], coord[0]));
+
+            const polygon = new google.maps.Polygon({
+                paths: path,
+                strokeColor: '#4285F4',
+                strokeOpacity: 0.8,
+                strokeWeight: 2,
+                fillColor: '#4285F4',
+                fillOpacity: 0.25,
+                editable: true,
+                map: map
+            });
+
+            lastPolygon = polygon;
+
+            const pathStr = path.map(p => '(' + p.lat() + ', ' + p.lng() + ')').join(',');
+            document.getElementById('coordinates').value = pathStr;
+
+            const bounds = new google.maps.LatLngBounds();
+            path.forEach(p => bounds.extend(p));
+            map.fitBounds(bounds);
+
+            google.maps.event.addListener(polygon.getPath(), 'set_at', updateCoordsFromPolygon);
+            google.maps.event.addListener(polygon.getPath(), 'insert_at', updateCoordsFromPolygon);
+
+            function updateCoordsFromPolygon() {
+                const arr = polygon.getPath().getArray();
+                document.getElementById('coordinates').value = arr.toString();
+            }
+
+            toastr.success('{{ translate("Boundary loaded onto map. You can edit the polygon before submitting.") }}');
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement('div');
+            div.appendChild(document.createTextNode(str));
+            return div.innerHTML;
+        }
+        // ── End Boundary Lookup ────────────────────────────────────────
 
         function extraFareSetupAlert(obj) {
             let zoneId = obj.id;

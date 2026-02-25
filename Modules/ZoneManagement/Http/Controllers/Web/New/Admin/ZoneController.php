@@ -15,6 +15,8 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use Modules\BusinessManagement\Service\BusinessSettingService;
 use Modules\BusinessManagement\Service\Interface\BusinessSettingServiceInterface;
@@ -178,6 +180,52 @@ class ZoneController extends BaseController
         $this->businessSettingService->storeAllZoneExtraFare(['zone_edit' => true]);
         Toastr::success(ZONE_UPDATE_200['message']);
         return redirect()->route("admin.zone.index");
+    }
+
+    public function boundarySearch(Request $request): JsonResponse
+    {
+        $q = $request->input('q', '');
+        $type = $request->input('type', 'city');
+
+        if (strlen($q) < 2) {
+            return response()->json(['results' => []]);
+        }
+
+        $query = $q;
+        if ($type === 'zip') {
+            $query .= ', USA';
+        } elseif ($type === 'county') {
+            $query .= ' County';
+        } elseif ($type === 'state') {
+            $query .= ', USA';
+        }
+
+        try {
+            $response = Http::withHeaders([
+                'User-Agent' => '1WayAdmin/1.0',
+            ])->get('https://nominatim.openstreetmap.org/search', [
+                'q' => $query,
+                'format' => 'json',
+                'polygon_geojson' => 1,
+                'limit' => 5,
+            ]);
+
+            $results = collect($response->json())
+                ->filter(fn ($item) => isset($item['geojson']) && in_array($item['geojson']['type'], ['Polygon', 'MultiPolygon']))
+                ->map(fn ($item) => [
+                    'display_name' => $item['display_name'],
+                    'type' => $item['type'] ?? $type,
+                    'geojson' => $item['geojson'],
+                    'boundingbox' => $item['boundingbox'] ?? null,
+                ])
+                ->values();
+
+            return response()->json(['results' => $results]);
+        } catch (\Throwable $e) {
+            Log::warning('Boundary search failed: ' . $e->getMessage());
+
+            return response()->json(['results' => [], 'error' => 'Boundary search temporarily unavailable']);
+        }
     }
 
     public function storeAllZoneExtraFare(Request $request): RedirectResponse

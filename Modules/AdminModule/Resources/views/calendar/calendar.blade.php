@@ -14,7 +14,10 @@
             <h3 class="mb-0 fw-bold">Calendar (Admin View)</h3>
             <div class="text-muted small">View scheduled trips and events by date</div>
         </div>
-        <div>
+        <div class="d-flex gap-2">
+            <a href="{{ route('admin.events.manage') }}" class="btn btn-sm btn-primary">
+                <i class="bi bi-plus-circle"></i> Create Event
+            </a>
             <form method="GET" class="d-flex gap-2">
                 <select name="month" class="form-select form-select-sm" style="width: auto;">
                     @for($m = 1; $m <= 12; $m++)
@@ -39,7 +42,18 @@
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-check"></i></div>
                     <div>
                         <div class="fw-bold fs-3">{{ $totalScheduled ?? 0 }}</div>
-                        <div class="oneway-kpi__label">Total Scheduled</div>
+                        <div class="oneway-kpi__label">Scheduled Trips</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-sm-6 col-xl-3">
+            <div class="card oneway-card p-3">
+                <div class="d-flex align-items-center gap-3">
+                    <div class="oneway-kpi__icon"><i class="bi bi-calendar-event text-primary"></i></div>
+                    <div>
+                        <div class="fw-bold fs-3">{{ $totalEvents ?? 0 }}</div>
+                        <div class="oneway-kpi__label">Active Events</div>
                     </div>
                 </div>
             </div>
@@ -50,7 +64,7 @@
                     <div class="oneway-kpi__icon"><i class="bi bi-calendar-month"></i></div>
                     <div>
                         <div class="fw-bold fs-3">{{ $thisMonthTrips ?? 0 }}</div>
-                        <div class="oneway-kpi__label">This Month</div>
+                        <div class="oneway-kpi__label">Trips This Month</div>
                     </div>
                 </div>
             </div>
@@ -62,17 +76,6 @@
                     <div>
                         <div class="fw-bold fs-3">{{ $thisMonthComplete ?? 0 }}</div>
                         <div class="oneway-kpi__label">Completed This Month</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-6 col-xl-3">
-            <div class="card oneway-card p-3">
-                <div class="d-flex align-items-center gap-3">
-                    <div class="oneway-kpi__icon"><i class="bi bi-hourglass-split text-info"></i></div>
-                    <div>
-                        <div class="fw-bold fs-3">{{ $pendingCount ?? 0 }}</div>
-                        <div class="oneway-kpi__label">Pending</div>
                     </div>
                 </div>
             </div>
@@ -100,31 +103,44 @@
                             $day = 1;
                             $daysInMonth = $daysInMonth ?? 30;
                             $firstDayOfWeek = $firstDayOfWeek ?? 0;
+                            $eventsByDate = $eventsByDate ?? collect();
                         @endphp
                         @for($week = 0; $week < 6; $week++)
                         <tr>
                             @for($dow = 0; $dow < 7; $dow++)
                             @if(($week === 0 && $dow < $firstDayOfWeek) || $day > $daysInMonth)
-                            <td class="text-muted" style="height: 100px; vertical-align: top; padding: 8px;">
-                                @if($week === 0 && $dow < $firstDayOfWeek)
-                                    {{-- Empty before first day --}}
-                                @endif
-                            </td>
+                            <td class="text-muted" style="height: 110px; vertical-align: top; padding: 8px;"></td>
                             @else
                             @php
                                 $currentDate = sprintf('%04d-%02d-%02d', $year, $month, $day);
                                 $tripCount = $scheduledTrips->get($currentDate)?->cnt ?? 0;
+                                $dayEvents = $eventsByDate->get($currentDate, collect());
                                 $isToday = $currentDate === now()->toDateString();
                             @endphp
-                            <td class="{{ $isToday ? 'bg-light border-primary border-2' : '' }}" style="height: 100px; vertical-align: top; padding: 8px;">
+                            <td class="{{ $isToday ? 'bg-light border-primary border-2' : '' }}" style="height: 110px; vertical-align: top; padding: 8px; overflow: hidden;">
                                 <div class="d-flex justify-content-between align-items-start">
                                     <span class="fw-semibold {{ $isToday ? 'text-primary' : '' }}">{{ $day }}</span>
-                                    @if($tripCount > 0)
-                                    <span class="badge bg-primary">{{ $tripCount }}</span>
-                                    @endif
+                                    <span class="d-flex gap-1">
+                                        @if($tripCount > 0)
+                                        <span class="badge bg-primary" title="Trips">{{ $tripCount }}</span>
+                                        @endif
+                                        @if($dayEvents->count() > 0)
+                                        <span class="badge bg-success" title="Events">{{ $dayEvents->count() }}</span>
+                                        @endif
+                                    </span>
                                 </div>
                                 @if($tripCount > 0)
                                 <div class="mt-1 small text-muted">{{ $tripCount }} trip{{ $tripCount > 1 ? 's' : '' }}</div>
+                                @endif
+                                @foreach($dayEvents->take(2) as $evt)
+                                <div class="mt-1 small text-truncate" style="max-width: 100%;">
+                                    <span class="badge bg-{{ $evt->is_promoted ? 'warning text-dark' : 'success' }} rounded-pill" style="font-size: 0.65rem;">
+                                        {{ Str::limit($evt->title, 15) }}
+                                    </span>
+                                </div>
+                                @endforeach
+                                @if($dayEvents->count() > 2)
+                                <div class="mt-1 small text-muted">+{{ $dayEvents->count() - 2 }} more</div>
                                 @endif
                             </td>
                             @php $day++; @endphp
@@ -139,6 +155,13 @@
         </div>
     </div>
 
-    <div class="text-muted small mt-3">Last updated: {{ now()->format('M j, Y g:i A') }}</div>
+    <div class="d-flex justify-content-between align-items-center mt-3">
+        <div class="text-muted small">Last updated: {{ now()->format('M j, Y g:i A') }}</div>
+        <div class="d-flex gap-3 small">
+            <span><span class="badge bg-primary">&nbsp;</span> Trips</span>
+            <span><span class="badge bg-success">&nbsp;</span> Events</span>
+            <span><span class="badge bg-warning">&nbsp;</span> Promoted</span>
+        </div>
+    </div>
 </div>
 @endsection

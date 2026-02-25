@@ -112,6 +112,10 @@ Route::get('/', 'index')->name('root');
         Route::get('calendar', 'calendar')->name('calendar.index');
         Route::get('events', 'eventsList')->name('events.index');
         Route::get('events/manage', 'manageEvents')->name('events.manage');
+        Route::post('events', 'storeEvent')->name('events.store');
+        Route::post('events/{id}/update', 'updateEvent')->name('events.update');
+        Route::post('events/toggle-status', 'toggleEventStatus')->name('events.toggle-status');
+        Route::post('events/toggle-promoted', 'togglePromoted')->name('events.toggle-promoted');
         Route::get('event-ride-planner', 'eventRidePlanner')->name('event-ride-planner.index');
         Route::get('venues', 'venues')->name('venues.index');
         Route::get('event-analytics', 'eventAnalytics')->name('event-analytics.index');
@@ -123,6 +127,14 @@ Route::get('/', 'index')->name('root');
     Route::get('ride-incentives',     [PromotionsController::class, 'rideIncentives'])->name('ride-incentives.index');
     Route::get('promo-performance',   [PromotionsController::class, 'promoPerformance'])->name('promo-performance.index');
     Route::get('payout-rules',        [PromotionsController::class, 'payoutRules'])->name('payout-rules.index');
+
+    // Coupon CRUD
+    Route::post('coupon/store',            [PromotionsController::class, 'storeCoupon'])->name('coupon.store');
+    Route::post('coupon/{id}/update',      [PromotionsController::class, 'updateCoupon'])->name('coupon.update');
+    Route::post('coupon/toggle-status',    [PromotionsController::class, 'toggleCoupon'])->name('coupon.toggle-status');
+
+    // Promoted Events toggle
+    Route::post('promoted-listings/toggle', [PromotionsController::class, 'togglePromotedEvent'])->name('promoted-listings.toggle');
 
     // Users
     Route::get('roles',               [UsersOpsController::class, 'roles'])->name('roles.index');

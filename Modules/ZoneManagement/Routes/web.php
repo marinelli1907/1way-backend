@@ -17,6 +17,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
             Route::get('trashed', 'trashed')->name('trashed');
             Route::get('restore/{id}', 'restore')->name('restore');
             Route::delete('permanent-delete/{id}', 'permanentDelete')->name('permanent-delete');
+            Route::get('boundary-search', 'boundarySearch')->name('boundary-search');
             Route::get('get-zones', 'getZones')->name('get-zones');
             Route::get('get-coordinates/{id}', 'getCoordinates')->name('getCoordinates');
             Route::get('export', 'export')->name('export');
