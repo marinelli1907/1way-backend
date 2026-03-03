@@ -734,6 +734,11 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
             $tripData['type'] = $attributes['type'];
             $tripData['entrance'] = $attributes['entrance'] ?? null;
             $tripData['encoded_polyline'] = $attributes['encoded_polyline'] ?? null;
+            $tripData['flight_number'] = isset($attributes['flight_number']) && $attributes['flight_number'] !== '' ? substr((string) $attributes['flight_number'], 0, 16) : null;
+            $tripData['flight_date'] = !empty($attributes['flight_date']) ? $attributes['flight_date'] : null;
+            $tripData['passengers_count'] = isset($attributes['passengers_count']) && $attributes['passengers_count'] !== '' ? min(20, max(0, (int) $attributes['passengers_count'])) : null;
+            $tripData['pets_count'] = isset($attributes['pets_count']) && $attributes['pets_count'] !== '' ? min(5, max(0, (int) $attributes['pets_count'])) : null;
+            $tripData['scheduled_at'] = !empty($attributes['scheduled_at']) ? $attributes['scheduled_at'] : null;
             $trip = $this->tripRequestRepository->create($tripData);
 
             $trip->tripStatus()->create([
@@ -835,14 +840,32 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
     {
         $save_trip = $this->storeTrip(attributes: $request->request->all());
 
+        // Service Zone hard driver restriction
+        $eligibleDriverIds = null;
+        try {
+            $eligibility = app(\Modules\ZoneManagement\Service\ZoneDriverEligibilityService::class);
+            $result = $eligibility->resolveEligibility(
+                (float) $pickupCoordinates[0],
+                (float) $pickupCoordinates[1],
+                'service/makeRideRequest'
+            );
+            $eligibleDriverIds = $result['driver_ids'];
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[ZoneDriverEligibility] check failed in makeRideRequest, allowing', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $search_radius = (float)get_cache('search_radius') ?? (float)5;
-        // Find drivers list based on pickup locations
         $find_drivers = $this->findNearestDriver(
             latitude: $pickupCoordinates[0],
             longitude: $pickupCoordinates[1],
             zoneId: $request->header('zoneId'),
             radius: $search_radius,
-            vehicleCategoryId: $request->vehicle_category_id
+            vehicleCategoryId: $request->vehicle_category_id,
+            eligibleDriverIds: $eligibleDriverIds
         );
         //Send notifications to drivers
         if (!empty($find_drivers)) {
@@ -888,17 +911,17 @@ class TripRequestService extends BaseService implements TripRequestServiceInterf
     }
 
 
-    public function findNearestDriver($latitude, $longitude, $zoneId, $radius = 5, $vehicleCategoryId = null): mixed
+    public function findNearestDriver($latitude, $longitude, $zoneId, $radius = 5, $vehicleCategoryId = null, ?array $eligibleDriverIds = null): mixed
     {
-        /*
-         * replace 6371000 with 6371 for kilometer and 3956 for miles
-         */
         $attributes = [
             'latitude' => $latitude,
             'longitude' => $longitude,
             'radius' => $radius,
             'zone_id' => $zoneId,
         ];
+        if ($eligibleDriverIds !== null) {
+            $attributes['eligible_driver_ids'] = $eligibleDriverIds;
+        }
         if ($vehicleCategoryId) {
             $attributes['vehicle_category_id'] = $vehicleCategoryId;
         }
@@ -1080,6 +1103,37 @@ $authId = auth("api")->id();
             return null;
         }
         return $trip;
+    }
+
+    /**
+     * Current active ride (incomplete) or next upcoming scheduled ride for the customer.
+     * Returns ['ride' => TripRequest|null, 'kind' => 'active'|'upcoming'|null].
+     */
+    public function getCustomerActiveOrUpcomingRide(): array
+    {
+        $active = $this->getCustomerIncompleteRide();
+        if ($active) {
+            return ['ride' => $active, 'kind' => 'active'];
+        }
+
+        $upcoming = \Modules\TripManagement\Entities\TripRequest::query()
+            ->where('customer_id', auth()->id())
+            ->where('type', 'ride_request')
+            ->whereNotNull('scheduled_at')
+            ->where('scheduled_at', '>', now())
+            ->where('current_status', '!=', 'cancelled')
+            ->with([
+                'customer', 'driver', 'vehicleCategory', 'vehicleCategory.tripFares', 'vehicle', 'coupon', 'time',
+                'coordinate', 'fee', 'tripStatus', 'zone', 'vehicle.model', 'fare_biddings', 'parcel', 'parcelUserInfo', 'flightDetail'
+            ])
+            ->orderBy('scheduled_at')
+            ->first();
+
+        if ($upcoming) {
+            return ['ride' => $upcoming, 'kind' => 'upcoming'];
+        }
+
+        return ['ride' => null, 'kind' => null];
     }
 
 

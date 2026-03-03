@@ -100,6 +100,9 @@ class TripRequest extends Model
         'discount_amount',
         'note',
         'entrance',
+        'passengers_count',
+        'pets_count',
+        'scheduled_at',
         'otp',
         'rise_request_count',
         'type',
@@ -109,6 +112,10 @@ class TripRequest extends Model
         'tips',
         'is_paused',
         'map_screenshot',
+        'flight_number',
+        'flight_date',
+        'flight_status_cached',
+        'flight_status_checked_at',
         'deleted_at',
         'created_at',
         'updated_at',
@@ -137,7 +144,12 @@ class TripRequest extends Model
         "discount_amount" => 'float',
         "total_fare" => 'float',
         "is_paused" => 'boolean',
-        "rise_request_count" => 'integer'
+        "rise_request_count" => 'integer',
+        'flight_status_cached' => 'array',
+        'flight_status_checked_at' => 'datetime',
+        'passengers_count' => 'integer',
+        'pets_count' => 'integer',
+        'scheduled_at' => 'datetime',
     ];
 
     protected static function newFactory()

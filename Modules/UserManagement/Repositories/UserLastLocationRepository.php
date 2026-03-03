@@ -65,6 +65,9 @@ class UserLastLocationRepository implements UserLastLocationInterface
                 ->whereNotIn('availability_status', ['unavailable', 'on_trip'])
             )
             ->whereHas('user.vehicle', fn($query) => $query->where('is_active', true))
+            ->when(!empty($attributes['eligible_driver_ids']), function ($query) use ($attributes) {
+                $query->whereIn('user_id', $attributes['eligible_driver_ids']);
+            })
             ->when(array_key_exists('vehicle_category_id', $attributes), function ($query) use ($attributes) {
                 $query->whereHas('user.vehicle', fn($query) => $query->ofStatus(1)->where('category_id', $attributes['vehicle_category_id']));
             })

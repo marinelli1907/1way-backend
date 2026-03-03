@@ -13,6 +13,18 @@
 
             <form action="{{ route('admin.driver.store') }}" method="post" enctype="multipart/form-data">
                 @csrf
+
+                @if($errors->any())
+                    <div class="alert alert-danger mb-3">
+                        <strong>{{ translate('please_fix_the_following_errors') }}:</strong>
+                        <ul class="mb-0 mt-1">
+                            @foreach($errors->all() as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                @endif
+
                 <div class="card">
                     <div class="card-body">
                         <div class="row gy-4">
@@ -73,6 +85,17 @@
                                                    name="identification_number" id="identity_card_num"
                                                    class="form-control"
                                                    placeholder="{{ translate('Ex: 3032') }}" required>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-6">
+                                        <div class="mb-4">
+                                            <label for="driver_split_percent"
+                                                   class="mb-2">{{ translate('Driver Split Percent') }}</label>
+                                            <input type="number" value="{{ old('driver_split_percent', 80) }}"
+                                                   name="driver_split_percent" id="driver_split_percent"
+                                                   class="form-control" min="0" max="100" step="1"
+                                                   placeholder="{{ translate('Ex: 80') }}">
+                                            <small class="text-muted">{{ translate('Percentage of fare the driver receives (0-100). Default: 80') }}</small>
                                         </div>
                                     </div>
                                 </div>

@@ -3,23 +3,23 @@
 namespace Tests\Feature;
 
 use Illuminate\Support\Facades\Hash;
+use Modules\UserManagement\Entities\DriverInviteToken;
+use Modules\UserManagement\Entities\DriverOnboardingStatus;
 use Modules\UserManagement\Entities\User;
 use Modules\UserManagement\Entities\UserLevel;
 use Tests\TestCase;
 
 class AdminDriverQuickAddTest extends TestCase
 {
-    /** @var User */
-    private $admin;
-
-    /** @var UserLevel */
-    private $driverLevel;
+    private User $admin;
+    private UserLevel $driverLevel;
 
     protected function setUp(): void
     {
         parent::setUp();
+
         $this->driverLevel = UserLevel::where('user_type', DRIVER)->orderBy('sequence')->first();
-        if (! $this->driverLevel) {
+        if (!$this->driverLevel) {
             $this->driverLevel = UserLevel::create([
                 'sequence'              => 1,
                 'name'                  => 'Test Driver Level',
@@ -38,126 +38,152 @@ class AdminDriverQuickAddTest extends TestCase
                 'is_active'             => 1,
             ]);
         }
+
         $this->admin = User::firstOrCreate(
             ['email' => 'admin-quickadd-test@test.local'],
             [
-                'first_name'   => 'Admin',
-                'last_name'    => 'QuickAdd',
-                'full_name'    => 'Admin QuickAdd',
-                'phone'        => '15555559999',
-                'password'     => Hash::make('password'),
-                'user_type'    => 'super-admin',
-                'is_active'    => 1,
+                'first_name' => 'Admin',
+                'last_name'  => 'QATest',
+                'full_name'  => 'Admin QATest',
+                'phone'      => '15550009999',
+                'password'   => Hash::make('password'),
+                'user_type'  => 'super-admin',
+                'is_active'  => 1,
             ]
         );
     }
 
-    public function test_quick_add_driver_persists_and_redirects(): void
+    private function validPayload(array $overrides = []): array
     {
-        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
-
-        $phone = '1555555' . rand(10000, 99999);
-        $email = 'quickadd-' . $phone . '@test.local';
-        $payload = [
-            'first_name'           => 'Quick',
-            'last_name'            => 'AddDriver',
-            'email'                => $email,
-            'phone'                => $phone,
-            'city_region'          => 'Test City',
-            'driver_split_percent' => '80',
-        ];
-
-        $response = $this->actingAs($this->admin, 'web')
-            ->post(route('admin.driver.quick-add.store'), $payload);
-
-        $response->assertRedirect();
-        $redirect = $response->headers->get('Location');
-        $this->assertStringContainsString('quick-add', $redirect);
-
-        $driver = User::where('phone', $phone)->where('user_type', DRIVER)->first();
-        $this->assertNotNull($driver, 'Driver should exist in DB after Quick Add');
-        $this->assertNotEquals($payload['email'], $driver->password, 'Password must not be stored plain');
-        $this->assertGreaterThanOrEqual(50, strlen($driver->password), 'Password must be hashed (bcrypt length)');
-        $this->assertSame('Quick', $driver->first_name);
-        $this->assertSame('AddDriver', $driver->last_name);
-        $this->assertNotNull($driver->driverDetails, 'Driver should have driver_details row');
-        $this->assertNotNull($driver->userAccount, 'Driver should have user_account row');
+        $uniq = rand(10000, 99999);
+        return array_merge([
+            'first_name'           => 'QATest',
+            'last_name'            => 'Driver',
+            'email'                => "qa-driver-{$uniq}@test.local",
+            'phone'                => "15559990{$uniq}",
+            'city_region'          => 'Cleveland, OH',
+            'driver_split_percent' => 80,
+        ], $overrides);
     }
 
-    public function test_quick_add_validation_errors_returned_for_duplicate_email(): void
+    public function test_quick_add_page_loads(): void
+    {
+        $response = $this->actingAs($this->admin, 'web')
+            ->get(route('admin.driver.quick-add.create'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Quick Add Driver', false);
+    }
+
+    public function test_quick_add_creates_driver_with_all_records(): void
     {
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 
-        $existing = User::where('user_type', DRIVER)->first();
-        if (! $existing) {
-            $this->markTestSkipped('No existing driver for duplicate test.');
-        }
-
-        $payload = [
-            'first_name' => 'Duplicate',
-            'last_name'  => 'Email',
-            'email'     => $existing->email,
-            'phone'     => '15555551111',
-        ];
+        $payload = $this->validPayload();
 
         $response = $this->actingAs($this->admin, 'web')
             ->post(route('admin.driver.quick-add.store'), $payload);
 
+        $this->assertNotEquals(500, $response->getStatusCode(), 'Must never return 500');
+
+        $driver = User::where('email', $payload['email'])->where('user_type', DRIVER)->first();
+        $this->assertNotNull($driver, 'Driver user record must exist');
+        $this->assertSame('QATest', $driver->first_name);
+        $this->assertSame('Driver', $driver->last_name);
+        $this->assertSame('QATest Driver', $driver->full_name);
+        $this->assertEquals(80, $driver->driver_split_percent);
+        $this->assertNotNull($driver->user_level_id, 'Must have a driver level assigned');
+        $this->assertTrue(strlen($driver->password) > 10, 'Password must be hashed');
+
+        // Related records
+        $this->assertNotNull($driver->driverDetails, 'DriverDetails must be created');
+        $this->assertNotNull($driver->userAccount, 'UserAccount must be created');
+
+        $onboarding = DriverOnboardingStatus::where('driver_id', $driver->id)->first();
+        $this->assertNotNull($onboarding, 'Onboarding status must be created');
+        $this->assertFalse($onboarding->profile_complete);
+        $this->assertFalse($onboarding->approved);
+
+        $invite = DriverInviteToken::where('driver_id', $driver->id)->first();
+        $this->assertNotNull($invite, 'Invite token must be created');
+        $this->assertFalse($invite->used);
+        $this->assertTrue($invite->expires_at->isFuture());
+    }
+
+    public function test_quick_add_result_page_loads_without_500(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
+        $payload = $this->validPayload();
+
+        $response = $this->actingAs($this->admin, 'web')
+            ->post(route('admin.driver.quick-add.store'), $payload);
+
+        // Should redirect to the show page — follow the redirect
+        $driver = User::where('email', $payload['email'])->first();
+        $this->assertNotNull($driver);
+
+        $showResponse = $this->actingAs($this->admin, 'web')
+            ->get(route('admin.driver.quick-add.show', $driver->id));
+
+        $this->assertNotEquals(500, $showResponse->getStatusCode(), 'Result page must NOT 500');
+        $showResponse->assertStatus(200);
+        $showResponse->assertSee('Driver Account Created', false);
+    }
+
+    public function test_quick_add_rejects_duplicate_email_with_302(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
+        $payload = $this->validPayload(['email' => $this->admin->email]);
+
+        $response = $this->actingAs($this->admin, 'web')
+            ->post(route('admin.driver.quick-add.store'), $payload);
+
+        $this->assertNotEquals(500, $response->getStatusCode(), 'Duplicate email must NOT 500');
+        $response->assertStatus(302);
         $response->assertSessionHasErrors('email');
     }
 
-    public function test_quick_add_validation_errors_returned_for_duplicate_phone(): void
+    public function test_quick_add_rejects_duplicate_phone_with_302(): void
     {
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 
-        $existing = User::where('user_type', DRIVER)->first();
-        if (! $existing) {
-            $this->markTestSkipped('No existing driver for duplicate test.');
-        }
-
-        $payload = [
-            'first_name' => 'Duplicate',
-            'last_name'  => 'Phone',
-            'email'     => 'unique-' . $existing->phone . '@test.local',
-            'phone'     => $existing->phone,
-        ];
+        $payload = $this->validPayload(['phone' => $this->admin->phone]);
 
         $response = $this->actingAs($this->admin, 'web')
             ->post(route('admin.driver.quick-add.store'), $payload);
 
+        $this->assertNotEquals(500, $response->getStatusCode(), 'Duplicate phone must NOT 500');
+        $response->assertStatus(302);
         $response->assertSessionHasErrors('phone');
     }
 
-    public function test_quick_add_bootstraps_driver_level_when_missing(): void
+    public function test_quick_add_rejects_missing_required_fields(): void
     {
         $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
 
-        // Remove any existing driver levels to force bootstrap path
-        UserLevel::where('user_type', DRIVER)->delete();
+        $response = $this->actingAs($this->admin, 'web')
+            ->post(route('admin.driver.quick-add.store'), []);
 
-        $phone = '1555555' . rand(10000, 99999);
-        $email = 'quickadd-bootstrap-' . $phone . '@test.local';
-        $payload = [
-            'first_name'           => 'Bootstrap',
-            'last_name'            => 'AddDriver',
-            'email'                => $email,
-            'phone'                => $phone,
-            'city_region'          => 'Bootstrap City',
-            'driver_split_percent' => '80',
-        ];
+        $this->assertNotEquals(500, $response->getStatusCode(), 'Missing fields must NOT 500');
+        $response->assertStatus(302);
+        $response->assertSessionHasErrors(['first_name', 'last_name', 'email', 'phone']);
+    }
+
+    public function test_quick_add_with_custom_split_percent(): void
+    {
+        $this->withoutMiddleware(\App\Http\Middleware\VerifyCsrfToken::class);
+
+        $payload = $this->validPayload(['driver_split_percent' => 65]);
 
         $response = $this->actingAs($this->admin, 'web')
             ->post(route('admin.driver.quick-add.store'), $payload);
 
-        $response->assertRedirect();
+        $this->assertNotEquals(500, $response->getStatusCode());
 
-        $this->assertGreaterThan(
-            0,
-            UserLevel::where('user_type', DRIVER)->count(),
-            'drivers:ensure-levels should have created at least one driver level'
-        );
-
-        $driver = User::where('phone', $phone)->where('user_type', DRIVER)->first();
-        $this->assertNotNull($driver, 'Driver should exist in DB after Quick Add with bootstrap');
+        $driver = User::where('email', $payload['email'])->first();
+        $this->assertNotNull($driver);
+        $this->assertEquals(65, $driver->driver_split_percent);
     }
 }

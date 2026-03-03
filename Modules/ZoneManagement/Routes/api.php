@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Modules\ZoneManagement\Http\Controllers\Api\New\Driver\ZoneController;
 use Modules\ZoneManagement\Http\Controllers\Api\ZonePointController;
+use Modules\ZoneManagement\Http\Controllers\Api\ServiceZoneApiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -32,3 +33,6 @@ Route::group(['prefix' => 'zone', 'middleware' => ['auth:api', 'maintenance_mode
         Route::post('trip-zones',     'tripZones');     // POST /api/zone/trip-zones
     });
 });
+
+// ── Service Zone containment check (no auth required) ───────────────────────
+Route::get('zones/contains', [ServiceZoneApiController::class, 'contains']);

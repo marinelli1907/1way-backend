@@ -58,6 +58,9 @@ Route::group(['prefix' => 'customer'], function () {
 
 Route::group(['prefix' => 'driver'], function () {
 
+    // Public: driver application (no auth required)
+    Route::post('applications', [\Modules\UserManagement\Http\Controllers\Api\DriverApplicationApiController::class, 'store']);
+
     Route::group(['middleware' => ['auth:api', 'maintenance_mode']], function () {
         Route::get('time-tracking', [TimeTrackController::class, 'store']);
         Route::post('update-online-status', [TimeTrackController::class, 'onlineStatus']);

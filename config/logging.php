@@ -113,6 +113,20 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+
+        'pricing_ai' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/pricing_ai.log'),
+            'level'  => 'debug',
+            'days'   => 14,
+        ],
+
+        'flight_api' => [
+            'driver' => 'daily',
+            'path'   => storage_path('logs/flight_api.log'),
+            'level'  => 'debug',
+            'days'   => 14,
+        ],
     ],
 
 ];

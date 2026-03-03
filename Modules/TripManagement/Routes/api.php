@@ -7,6 +7,7 @@ use Modules\TripManagement\Http\Controllers\Api\Customer\TripRequestController;
 use Modules\TripManagement\Http\Controllers\Api\New\Customer\SafetyAlertController;
 use Modules\TripManagement\Http\Controllers\Api\New\Customer\ParcelRefundController;
 use Modules\TripManagement\Http\Controllers\Api\Driver\TripRequestController as DriverTripController;
+use Modules\TripManagement\Http\Controllers\Api\Driver\RefreshFlightController;
 use Modules\TripManagement\Http\Controllers\Api\Customer\FlightController;
 
 /**
@@ -18,6 +19,7 @@ Route::group(['prefix' => 'customer', 'middleware' => ['auth:api', 'maintenance_
         Route::controller(TripRequestController::class)->group(function () {
             Route::post('get-estimated-fare', 'getEstimatedFare');
             Route::post('create', 'createRideRequest');
+            Route::get('active-ride', 'activeRide');
             Route::put('ignore-bidding', 'ignoreBidding');
             Route::get('bidding-list/{trip_request_id}', 'biddingList');
             Route::put('update-status/{trip_request_id}', 'rideStatusUpdate');
@@ -87,6 +89,7 @@ Route::group(['prefix' => 'driver', 'middleware' => ['auth:api', 'maintenance_mo
             Route::get('unpaid-parcel-list', 'unpaidParcelRequest');
             Route::put('returned-parcel', 'returnedParcel');
             Route::put('resend-otp', 'resendOtp');
+            Route::post('{trip_request_id}/refresh-flight', [RefreshFlightController::class, 'refresh']);
         });
         Route::get('final-fare', [TripRequestController::class, 'finalFareCalculation']);
         Route::get('payment', [PaymentController::class, 'payment']);

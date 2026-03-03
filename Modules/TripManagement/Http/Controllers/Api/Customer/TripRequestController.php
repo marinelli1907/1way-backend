@@ -497,16 +497,32 @@ class TripRequestController extends Controller
             }
         }
 
+        // Service Zone hard driver restriction
+        $pickupLat = (float) ($pickup_coordinates[0] ?? $final->coordinate->pickup_coordinates->latitude);
+        $pickupLng = (float) ($pickup_coordinates[1] ?? $final->coordinate->pickup_coordinates->longitude);
+        $eligibleDriverIds = null;
+        try {
+            $eligibility = app(\Modules\ZoneManagement\Service\ZoneDriverEligibilityService::class);
+            $result = $eligibility->resolveEligibility($pickupLat, $pickupLng, 'api/customer/ride/create');
+            $eligibleDriverIds = $result['driver_ids'];
+        } catch (\Illuminate\Http\Exceptions\HttpResponseException $e) {
+            throw $e;
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('[ZoneDriverEligibility] check failed in createRideRequest, allowing', [
+                'error' => $e->getMessage(),
+            ]);
+        }
+
         $search_radius = (double)get_cache('search_radius') ?? 5;
-        // Find drivers list based on pickup locations
         $find_drivers = $this->findNearestDriver(
-            latitude: $pickup_coordinates[0] ?? $final->coordinate->pickup_coordinates->latitude,
-            longitude: $pickup_coordinates[1] ?? $final->coordinate->pickup_coordinates->longitude,
+            latitude: $pickupLat,
+            longitude: $pickupLng,
             zone_id: $zone->id,
             radius: $search_radius,
             vehicleCategoryId: $request->vehicle_category_id ?? $final->vehicle_category_id,
             requestType: $request->type ?? $final->type,
-            parcelWeight: $request->weight ?? null
+            parcelWeight: $request->weight ?? null,
+            eligibleDriverIds: $eligibleDriverIds
         );
         //Send notifications to drivers
         if (!empty($find_drivers)) {
@@ -1224,12 +1240,24 @@ class TripRequestController extends Controller
             return response()->json(responseFormatter(ZONE_404));
         }
 
-        // Find drivers list based on customer last locations
+        // Service Zone driver restriction
+        $eligibleDriverIds = null;
+        if ($request->latitude && $request->longitude) {
+            $eligibility = app(\Modules\ZoneManagement\Service\ZoneDriverEligibilityService::class);
+            $result = $eligibility->resolveEligibility(
+                (float) $request->latitude,
+                (float) $request->longitude,
+                'api/customer/drivers-near-me'
+            );
+            $eligibleDriverIds = $result['driver_ids'];
+        }
+
         $driver_list = $this->findNearestDriver(
             latitude: $request->latitude,
             longitude: $request->longitude,
             zone_id: $request->header('zoneId'),
-            radius: (double)(get_cache('search_radius') ?? 50)
+            radius: (double)(get_cache('search_radius') ?? 50),
+            eligibleDriverIds: $eligibleDriverIds
         );
         $lastLocationDriver = LastLocationResource::collection($driver_list);
         return response()->json(responseFormatter(constant: DEFAULT_200, content: $lastLocationDriver));
@@ -1517,17 +1545,17 @@ class TripRequestController extends Controller
      * @param null $vehicleCategoryId
      * @return mixed
      */
-    private function findNearestDriver($latitude, $longitude, $zone_id, $radius = 50, $vehicleCategoryId = null, $requestType = null, $parcelWeight = null): mixed
+    private function findNearestDriver($latitude, $longitude, $zone_id, $radius = 50, $vehicleCategoryId = null, $requestType = null, $parcelWeight = null, ?array $eligibleDriverIds = null): mixed
     {
-        /*
-         * replace 6371000 with 6371 for kilometer and 3956 for miles
-         */
         $attributes = [
             'latitude' => $latitude,
             'longitude' => $longitude,
             'radius' => $radius,
             'zone_id' => $zone_id,
         ];
+        if ($eligibleDriverIds !== null) {
+            $attributes['eligible_driver_ids'] = $eligibleDriverIds;
+        }
         if ($vehicleCategoryId) {
             $attributes['vehicle_category_id'] = $vehicleCategoryId;
         }

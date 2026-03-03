@@ -196,15 +196,11 @@
                                     <img width="48" src="{{ asset('assets/admin-module/img/media/cc.png') }}"
                                         alt="">
                                     <h3 class="fw-bold mb-0 fs-3">
-                                        {{ getCurrencyFormat($commonData['collectable_amount']) }}</h3>
+                                        {{ getCurrencyFormat($commonData['total_earning']) }}</h3>
                                     <div class="fw-bold text-capitalize mb-30">
-                                        {{ translate('collectable_cash') }}
+                                        {{ translate('total_earning') }}
                                     </div>
                                 </div>
-                                @if($commonData['collectable_amount']>0)
-                                    <a href="{{ route('admin.driver.cash.index', [$commonData['driver']->id]) }}"
-                                       class="text-capitalize btn btn-primary mb-4">{{ translate('collect_cash') }}</a>
-                                @endif
                             </div>
 
                         </div>

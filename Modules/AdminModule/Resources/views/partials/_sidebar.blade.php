@@ -118,6 +118,12 @@
             'patterns' => ['admin/zone*']
         ]))
         @php($navItem([
+            'label' => 'Service Zones (Geo)',
+            'icon' => 'bi bi-globe-americas',
+            'route' => 'admin.service-zone.index',
+            'patterns' => ['admin/service-zone*']
+        ]))
+        @php($navItem([
             'label' => 'Cancellations / No-Shows',
             'icon' => 'bi bi-x-circle',
             'route' => 'admin.cancellations.index',
@@ -304,12 +310,7 @@
             'route' => 'admin.withdraw.index',
             'patterns' => ['admin/withdraw*']
         ]))
-        @php($navItem([
-            'label' => 'Cash Collect',
-            'icon' => 'bi bi-cash-stack',
-            'route' => 'admin.cash-collect.index',
-            'patterns' => ['admin/cash-collect*']
-        ]))
+        {{-- Cash Collect removed — 1Way drivers don't handle cash --}}
         @php($navItem([
             'label' => 'Refunds / Chargebacks',
             'icon' => 'bi bi-arrow-counterclockwise',

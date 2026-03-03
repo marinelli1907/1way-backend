@@ -490,6 +490,16 @@ const ZONE_RESOURCE_404 = [
     'message' => 'Operation service not available in this area'
 ];
 
+const OUTSIDE_SERVICE_AREA_422 = [
+    'response_code' => 'outside_service_area_422',
+    'message' => 'Outside service area'
+];
+
+const NO_DRIVERS_IN_ZONE_409 = [
+    'response_code' => 'no_drivers_in_zone',
+    'message' => 'No drivers available in this zone right now.'
+];
+
 const ROUTE_NOT_FOUND_404 = [
     'response_code' => 'route_404',
     'message' => 'Route not found your selected pickup & destination address'

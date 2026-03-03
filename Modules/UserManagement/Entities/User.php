@@ -275,6 +275,16 @@ class User extends Authenticatable
         return $this->hasMany(ChannelUser::class, 'user_id', 'id');
     }
 
+    public function serviceZones()
+    {
+        return $this->belongsToMany(
+            \Modules\ZoneManagement\Entities\ServiceZone::class,
+            'service_zone_drivers',
+            'driver_user_id',
+            'service_zone_id'
+        )->withPivot(['is_active', 'priority'])->withTimestamps();
+    }
+
     public function getCompletionPercentAttribute()
     {
         $attributes = [

@@ -65,7 +65,9 @@
                     <div class="card-header fw-bold d-flex align-items-center gap-2">
                         <i class="bi bi-clipboard-check text-primary"></i>
                         Onboarding Checklist
-                        @php($onboarding = $driver->onboardingStatus)
+                        @php
+                        $onboarding = $driver->onboardingStatus;
+                        @endphp
                         @if($onboarding)
                             <span class="badge bg-primary ms-auto">{{ $onboarding->progressPercent() }}%</span>
                         @endif

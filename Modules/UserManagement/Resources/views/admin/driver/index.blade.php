@@ -72,6 +72,14 @@
                                         </form>
 
                                         <div class="d-flex flex-wrap gap-3">
+                                            @can('user_delete')
+                                                <button type="button" class="btn btn-outline-danger px-3" id="bulkDeleteBtn"
+                                                        style="display:none" data-bs-toggle="tooltip"
+                                                        data-bs-title="Delete selected drivers">
+                                                    <i class="bi bi-trash-fill me-1"></i>
+                                                    Delete Selected (<span id="selectedCount">0</span>)
+                                                </button>
+                                            @endcan
                                             @can('super-admin')
                                                 <a href="{{ route('admin.driver.index', ['status' => request('status')]) }}"
                                                    class="btn btn-outline-primary px-3" data-bs-toggle="tooltip"
@@ -120,10 +128,19 @@
                                         </div>
                                     </div>
 
+                                    <form id="bulkDeleteForm" action="{{ route('admin.driver.bulk-delete') }}" method="POST" style="display:none">
+                                        @csrf
+                                    </form>
+
                                     <div class="table-responsive mt-3">
                                         <table class="table table-borderless align-middle table-hover">
                                             <thead class="table-light align-middle text-capitalize">
                                             <tr>
+                                                @can('user_delete')
+                                                    <th style="width:40px">
+                                                        <input type="checkbox" id="selectAll" class="form-check-input">
+                                                    </th>
+                                                @endcan
                                                 <th>{{ translate('SL') }}</th>
                                                 <th class="name">{{ translate('name') }}</th>
                                                 <th class="contact-info">{{ translate('contact_info') }}</th>
@@ -140,6 +157,12 @@
                                             <tbody>
                                             @forelse($drivers as $key => $driver)
                                                 <tr id="hide-row-{{ $driver->id }}" class="record-row">
+                                                    @can('user_delete')
+                                                        <td>
+                                                            <input type="checkbox" class="form-check-input driver-checkbox"
+                                                                   value="{{ $driver->id }}">
+                                                        </td>
+                                                    @endcan
                                                     <td>{{ $key + $drivers->firstItem() }}</td>
                                                     <td class="name">
                                                         <a href="{{ route('admin.driver.show', ['id' => $driver->id]) }}"
@@ -207,28 +230,18 @@
                                                                 </a>
                                                             @endcan
                                                             @can('user_delete')
-                                                                    @if(count($driver->getDriverLastTrip())!=0|| (optional($driver->userAccount)->payable_balance ?? 0)>0 || (optional($driver->userAccount)->pending_balance ?? 0)>0 || (optional($driver->userAccount)->receivable_balance ?? 0)>0)
-                                                                            <button data-id="delete-{{ $driver->id }}"
-                                                                                    data-message="{{ translate("Sorry you can't delete this driver, because there are ongoing rides or payment due this driver.?") }}"
-                                                                                    type="button"
-                                                                                    class="btn btn-outline-danger btn-action form-alert-warning">
-                                                                                <i class="bi bi-trash-fill"></i>
-                                                                            </button>
-                                                                        @else
-                                                                        <button data-id="delete-{{ $driver->id }}"
-                                                                                data-message="{{ translate('want_to_delete_this_driver?') }}"
-                                                                                data-type="driver"
-                                                                                type="button"
-                                                                                class="btn btn-outline-danger btn-action form-alert">
-                                                                            <i class="bi bi-trash-fill"></i>
-                                                                        </button>
-                                                                        <form
-                                                                            action="{{ route('admin.driver.delete', ['id' => $driver->id]) }}"
-                                                                            method="post" id="delete-{{ $driver->id }}">
-                                                                            @csrf
-                                                                            @method('delete')
-                                                                        </form>
-                                                                    @endif
+                                                                <button data-id="delete-{{ $driver->id }}"
+                                                                        data-message="{{ translate('want_to_delete_this_driver?') }}"
+                                                                        type="button"
+                                                                        class="btn btn-outline-danger btn-action form-alert">
+                                                                    <i class="bi bi-trash-fill"></i>
+                                                                </button>
+                                                                <form
+                                                                    action="{{ route('admin.driver.delete', ['id' => $driver->id]) }}"
+                                                                    method="post" id="delete-{{ $driver->id }}">
+                                                                    @csrf
+                                                                    @method('delete')
+                                                                </form>
                                                             @endcan
                                                         </div>
                                                     </td>
@@ -282,5 +295,62 @@
             loadPartialView('{{ route('admin.driver.statistics') }}?date_range=' + data, '#statistics')
         })
         loadPartialView('{{ route('admin.driver.statistics') }}?date_range=all_time', '#statistics')
+
+        // ── Multi-select + bulk delete ──────────────────────────────────
+        var $selectAll = $('#selectAll');
+        var $checkboxes = $('.driver-checkbox');
+        var $bulkBtn = $('#bulkDeleteBtn');
+        var $countSpan = $('#selectedCount');
+        var $bulkForm = $('#bulkDeleteForm');
+
+        function updateBulkUI() {
+            var checked = $('.driver-checkbox:checked');
+            var count = checked.length;
+            $countSpan.text(count);
+            $bulkBtn.toggle(count > 0);
+            $selectAll.prop('checked', count > 0 && count === $checkboxes.length);
+        }
+
+        $selectAll.on('change', function() {
+            $checkboxes.prop('checked', this.checked);
+            updateBulkUI();
+        });
+
+        $(document).on('change', '.driver-checkbox', updateBulkUI);
+
+        $bulkBtn.on('click', function() {
+            var checked = $('.driver-checkbox:checked');
+            var count = checked.length;
+            if (count === 0) return;
+
+            var msg = 'Delete ' + count + ' selected driver(s)? Drivers with active trips or balances will be skipped.';
+            var proceed = (typeof Swal !== 'undefined')
+                ? null
+                : confirm(msg);
+
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    title: msg,
+                    type: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Yes, delete',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then(function(result) {
+                    if (result.value) submitBulkDelete();
+                });
+            } else if (proceed) {
+                submitBulkDelete();
+            }
+        });
+
+        function submitBulkDelete() {
+            $bulkForm.find('input[name="ids[]"]').remove();
+            $('.driver-checkbox:checked').each(function() {
+                $bulkForm.append('<input type="hidden" name="ids[]" value="' + $(this).val() + '">');
+            });
+            $bulkForm.submit();
+        }
     </script>
 @endpush

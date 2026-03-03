@@ -14,6 +14,7 @@ use Modules\UserManagement\Http\Controllers\Web\New\Admin\Employee\EmployeeRoleC
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerLevelController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\Driver\WithdrawRequestController;
 use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerWalletController;
+use Modules\UserManagement\Http\Controllers\Web\New\Admin\DriverApplication\DriverApplicationController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,6 +28,19 @@ use Modules\UserManagement\Http\Controllers\Web\New\Admin\Customer\CustomerWalle
 */
 
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], function () {
+
+    // ── Driver Applications / Onboarding ──────────────────────────────────
+    Route::group(['prefix' => 'driver-applications', 'as' => 'driver-applications.'], function () {
+        Route::controller(DriverApplicationController::class)->group(function () {
+            Route::get('/',                      'index')->name('index');
+            Route::get('{id}',                   'show')->name('show');
+            Route::post('{id}/approve',          'approve')->name('approve');
+            Route::post('{id}/reject',           'reject')->name('reject');
+            Route::get('{id}/license',           'downloadLicense')->name('download-license');
+            Route::get('{id}/doc/{docKey}',      'serveDocument')->name('serve-document');
+        });
+    });
+
     Route::group(['prefix' => 'customer', 'as' => 'customer.'], function () {
         Route::controller(CustomerController::class)->group(function () {
             Route::get('/', 'index')->name('index');
@@ -132,12 +146,7 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
             Route::get('restore/{id}', 'restore')->name('restore');
             Route::get('export', 'export')->name('export');
             Route::get('transaction-export', 'driverTransactionExport')->name('transaction-export');
-        });
-
-
-        Route::group(['prefix' => 'cash', 'as' => 'cash.'], function () {
-            Route::get('/{id}', [CashCollectController::class, 'show'])->name('index');
-            Route::post('collect/{id}', [CashCollectController::class, 'collect'])->name('collect');
+            Route::post('bulk-delete', 'bulkDestroy')->name('bulk-delete');
         });
 
         Route::group(['prefix' => 'level', 'as' => 'level.'], function () {

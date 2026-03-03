@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Modules\ZoneManagement\Http\Controllers\Web\New\Admin\ZoneController;
 use Modules\ZoneManagement\Http\Controllers\Web\New\Admin\ZoneGeoJsonController;
+use Modules\ZoneManagement\Http\Controllers\Web\New\Admin\ServiceZoneController;
 
 //New Route Mamun
 Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], function () {
@@ -39,5 +40,25 @@ Route::group(['prefix' => 'admin', 'as' => 'admin.', 'middleware' => 'admin'], f
         });
         // ── End GeoJSON ──────────────────────────────────────────────────
 
+    });
+
+    // ── Service Zones (Map Builder) ─────────────────────────────────────
+    Route::group(['prefix' => 'service-zone', 'as' => 'service-zone.'], function () {
+        Route::controller(ServiceZoneController::class)->group(function () {
+            Route::get('/',             'index')->name('index');
+            Route::get('create',       'create')->name('create');
+            Route::post('store',       'store')->name('store');
+            Route::get('edit/{id}',    'edit')->name('edit');
+            Route::put('update/{id}',  'update')->name('update');
+            Route::delete('delete/{id}', 'destroy')->name('delete');
+            Route::get('status',       'toggleStatus')->name('status');
+            Route::get('lookup-boundary', 'lookupBoundary')->name('lookup-boundary');
+            Route::get('test-contains',   'testContains')->name('test-contains');
+            Route::post('import-boundary', 'importBoundary')->name('import-boundary');
+            Route::get('{id}/pricing',    'pricingEdit')->name('pricing');
+            Route::put('{id}/pricing',    'pricingUpdate')->name('pricing.update');
+            Route::get('{id}/drivers/search', 'searchDrivers')->name('drivers.search');
+            Route::put('{id}/drivers',        'syncDrivers')->name('drivers.sync');
+        });
     });
 });

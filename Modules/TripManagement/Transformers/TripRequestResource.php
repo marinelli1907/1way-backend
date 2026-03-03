@@ -83,6 +83,13 @@ class TripRequestResource extends JsonResource
             'parcel_refund' => ParcelRefundResource::make($this->whenLoaded('parcelRefund')),
             'driver_safety_alert' => SafetyAlertResource::make($this->driverSafetyAlert),
             'customer_safety_alert' => SafetyAlertResource::make($this->customerSafetyAlert),
+            'flight_number' => $this->flight_number,
+            'flight_date' => $this->flight_date ? \Carbon\Carbon::parse($this->flight_date)->format('Y-m-d') : null,
+            'flight_status_cached' => $this->flight_status_cached,
+            'flight_status_checked_at' => $this->flight_status_checked_at?->toIso8601String(),
+            'passengers_count' => $this->passengers_count,
+            'pets_count' => $this->pets_count,
+            'scheduled_at' => $this->scheduled_at ? $this->scheduled_at->toIso8601String() : null,
         ];
 
         if ($this->relationLoaded('flightDetail') && $this->flightDetail) {

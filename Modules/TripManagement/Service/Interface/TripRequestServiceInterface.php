@@ -60,6 +60,12 @@ interface TripRequestServiceInterface extends BaseServiceInterface
 
     public function getCustomerIncompleteRide(): mixed;
 
+    /**
+     * Current active ride or next upcoming scheduled ride for the customer.
+     * @return array{ride: \Illuminate\Database\Eloquent\Model|null, kind: 'active'|'upcoming'|null}
+     */
+    public function getCustomerActiveOrUpcomingRide(): array;
+
     public function handleDriverStatusUpdate($request, $trip);
 
     public function getDriverIncompleteRide(): mixed;

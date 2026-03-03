@@ -105,6 +105,29 @@
 @if (file_exists(public_path('assets/admin-module/js/toastr.min.js')))
     <script src="{{ asset('assets/admin-module/js/toastr.min.js') }}"></script>
 @endif
+
+{!! Toastr::message() !!}
+
+@if(session('error'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof toastr !== 'undefined') {
+                toastr.error({{ json_encode(session('error')) }});
+            } else {
+                alert('Error: ' + {{ json_encode(session('error')) }});
+            }
+        });
+    </script>
+@endif
+@if(session('success'))
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (typeof toastr !== 'undefined') {
+                toastr.success({{ json_encode(session('success')) }});
+            }
+        });
+    </script>
+@endif
 @if (file_exists(public_path('assets/admin-module/plugins/select2/select2.min.js')))
     <script src="{{ asset('assets/admin-module/plugins/select2/select2.min.js') }}"></script>
 @endif
@@ -124,6 +147,66 @@
             }
         } catch (e) {}
     })();
+</script>
+
+{{-- SweetAlert2 (used by .form-alert / .form-alert-warning delete buttons) --}}
+@if (file_exists(public_path('assets/admin-module/js/sweet_alert.js')))
+    <script src="{{ asset('assets/admin-module/js/sweet_alert.js') }}"></script>
+@endif
+
+{{-- Global handlers for form-alert pattern used across admin views --}}
+<script>
+(function($) {
+    if (!$ || !$.fn) return;
+
+    $(document).on('click', '.form-alert', function() {
+        var formId = $(this).data('id');
+        var message = $(this).data('message') || 'Are you sure?';
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                title: message,
+                type: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Yes',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then(function(result) {
+                if (result.value) {
+                    $('#' + formId).submit();
+                }
+            });
+        } else if (confirm(message)) {
+            $('#' + formId).submit();
+        }
+    });
+
+    $(document).on('click', '.form-alert-warning', function() {
+        var message = $(this).data('message') || 'This action is not allowed.';
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ title: message, type: 'warning' });
+        } else {
+            alert(message);
+        }
+    });
+
+    if (typeof window.loadPartialView === 'undefined') {
+        window.loadPartialView = function(url, target) {
+            $.get(url).done(function(html) {
+                $(target).html(html);
+            }).fail(function() {
+                $(target).html('<p class="text-muted p-3">Could not load data.</p>');
+            });
+        };
+    }
+
+    if (typeof window.setFilter === 'undefined') {
+        window.setFilter = function(url, value, key) {
+            var separator = url.indexOf('?') !== -1 ? '&' : '?';
+            window.location.href = url + separator + key + '=' + encodeURIComponent(value);
+        };
+    }
+})(window.jQuery);
 </script>
 
 @stack('script')

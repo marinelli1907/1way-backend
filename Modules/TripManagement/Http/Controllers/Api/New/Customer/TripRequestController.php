@@ -36,6 +36,7 @@ use Modules\UserManagement\Service\Interface\DriverDetailServiceInterface;
 use Modules\UserManagement\Service\Interface\UserServiceInterface;
 use Modules\UserManagement\Transformers\LastLocationResource;
 use Modules\ZoneManagement\Service\Interface\ZoneServiceInterface;
+use Modules\ZoneManagement\Service\GeoZoneService;
 
 class TripRequestController extends Controller
 {
@@ -54,6 +55,7 @@ class TripRequestController extends Controller
     protected $parcelFareWeightService;
     protected $recentAddressService;
     protected $tripRequestTimeService;
+    protected GeoZoneService $geoZoneService;
 
     public function __construct(
         TripRequestServiceInterface $tripRequestservice,
@@ -69,7 +71,8 @@ class TripRequestController extends Controller
         ParcelFareWeightServiceInterface $parcelFareWeightService,
         ParcelFareServiceInterface $parcelFareService,
         RecentAddressServiceInterface $recentAddressService,
-        TripRequestTimeServiceInterface $tripRequestTimeService
+        TripRequestTimeServiceInterface $tripRequestTimeService,
+        GeoZoneService $geoZoneService
 
     ) {
         $this->tripRequestservice = $tripRequestservice;
@@ -86,6 +89,7 @@ class TripRequestController extends Controller
         $this->parcelFareService = $parcelFareService;
         $this->recentAddressService = $recentAddressService;
         $this->tripRequestTimeService = $tripRequestTimeService;
+        $this->geoZoneService = $geoZoneService;
     }
 
 
@@ -106,6 +110,19 @@ class TripRequestController extends Controller
         $pickupCoordinates = json_decode($request['pickup_coordinates'], true);
         $destinationCoordinates = json_decode($request['destination_coordinates'], true);
         $customer_coordinates = json_decode($request['customer_coordinates'], true);
+
+        $serviceZoneId = null;
+        if ($this->geoZoneService->isEnforcementEnabled()) {
+            $serviceZone = $this->geoZoneService->findZoneForPoint(
+                (float) $pickupCoordinates[0],
+                (float) $pickupCoordinates[1]
+            );
+            if (!$serviceZone) {
+                return response()->json(responseFormatter(OUTSIDE_SERVICE_AREA_422), 422);
+            }
+            $serviceZoneId = $serviceZone->id;
+        }
+
         $pickup_point = new Point($pickupCoordinates[0], $pickupCoordinates[1]);
         $destination_point = new Point($destinationCoordinates[0], $destinationCoordinates[1]);
         $customer_point = new Point($customer_coordinates[0], $customer_coordinates[1]);
@@ -113,6 +130,7 @@ class TripRequestController extends Controller
         $request->merge([
             'customer_id' => auth('api')->id(),
             'zone_id' => $request->header('zoneId'),
+            'service_zone_id' => $serviceZoneId,
             'pickup_coordinates' => $pickup_point,
             'destination_coordinates' => $destination_point,
             'estimated_fare' => $request->estimated_fare,
@@ -143,6 +161,16 @@ class TripRequestController extends Controller
         $user = auth('api')->user();
         $pickupCoordinates = json_decode($request->pickup_coordinates, true);
         $destinationCoordinates = json_decode($request->destination_coordinates, true);
+
+        if ($this->geoZoneService->isEnforcementEnabled()) {
+            $serviceZone = $this->geoZoneService->findZoneForPoint(
+                (float) $pickupCoordinates[0],
+                (float) $pickupCoordinates[1]
+            );
+            if (!$serviceZone) {
+                return response()->json(responseFormatter(OUTSIDE_SERVICE_AREA_422), 422);
+            }
+        }
 
         $intermediate_coordinates = [];
         if (!is_null($request['intermediate_coordinates'])) {
@@ -491,6 +519,20 @@ class TripRequestController extends Controller
         $trip = TripRequestResource::make($trip);
 
         return response()->json(responseFormatter(constant: DEFAULT_200, content: $trip));
+    }
+
+    /**
+     * GET active-ride: current active ride or next upcoming scheduled ride for the rider.
+     * Response: { ride: TripRequestResource|null, kind: 'active'|'upcoming'|null }
+     */
+    public function activeRide(): JsonResponse
+    {
+        $result = $this->tripRequestservice->getCustomerActiveOrUpcomingRide();
+        $ride = $result['ride'] ? TripRequestResource::make($result['ride']) : null;
+        return response()->json(responseFormatter(constant: DEFAULT_200, content: [
+            'ride' => $ride,
+            'kind' => $result['kind'],
+        ]));
     }
 
     public function pendingParcelList(Request $request): JsonResponse

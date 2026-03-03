@@ -55,7 +55,14 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
 
     public function create(array $data): ?Model
     {
-        $firstLevel = $this->userLevelRepository->findOneBy(criteria: ['user_type' => DRIVER, 'sequence' => 1]);
+        // Use level passed from controller, otherwise look up
+        $firstLevel = null;
+        if (!empty($data['user_level_id'])) {
+            $firstLevel = $this->userLevelRepository->findOne(id: $data['user_level_id']);
+        }
+        if (!$firstLevel) {
+            $firstLevel = $this->userLevelRepository->findOneBy(criteria: ['user_type' => DRIVER, 'sequence' => 1]);
+        }
         $identityImages = [];
         if (array_key_exists('identity_images', $data)) {
             foreach ($data['identity_images'] as $image) {
@@ -210,12 +217,13 @@ class DriverService extends BaseService implements Interface\DriverServiceInterf
         //driver rate info
         $driverRateInfoData = $this->driverRateInfo($driver);
 
+        $acct = $driver?->userAccount;
         $commonData = [
-            'collectable_amount' => $driver?->userAccount->payable_balance > $driver?->userAccount->receivable_balance ? ($driver?->userAccount->payable_balance - $driver?->userAccount->receivable_balance) : 0,
-            'pending_withdraw' => $driver?->userAccount->pending_balance,
-            'already_withdrawn' => $driver?->userAccount->total_withdrawn,
-            'withdrawable_amount' => $driver?->userAccount->receivable_balance > $driver?->userAccount->payable_balance ? ($driver?->userAccount->receivable_balance - $driver?->userAccount->payable_balance) : 0,
-            'total_earning' => $driver?->userAccount->received_balance,
+            'collectable_amount' => ($acct?->payable_balance ?? 0) > ($acct?->receivable_balance ?? 0) ? (($acct?->payable_balance ?? 0) - ($acct?->receivable_balance ?? 0)) : 0,
+            'pending_withdraw' => $acct?->pending_balance ?? 0,
+            'already_withdrawn' => $acct?->total_withdrawn ?? 0,
+            'withdrawable_amount' => ($acct?->receivable_balance ?? 0) > ($acct?->payable_balance ?? 0) ? (($acct?->receivable_balance ?? 0) - ($acct?->payable_balance ?? 0)) : 0,
+            'total_earning' => $acct?->received_balance ?? 0,
             'idle_rate_today' => $driverRateInfoData['idleRateToday'],
             'avg_active_day' => $driverRateInfoData['avgActiveRateByDay'],
             'driver_avg_earning' => $driverRateInfoData['driverAvgEarning'],

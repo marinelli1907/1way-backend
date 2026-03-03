@@ -88,12 +88,28 @@ class AuthServiceProvider extends ServiceProvider
         Gate::define('business_edit', fn () => $this->checkAccess('business_management', 'update'));
         Gate::define('business_delete', fn () => $this->checkAccess('business_management', 'delete'));
 
+        Gate::define('service_zone_view', fn () => $this->checkAccess('service_zone_management', 'view'));
+        Gate::define('service_zone_add', fn () => $this->checkAccess('service_zone_management', 'add'));
+        Gate::define('service_zone_edit', fn () => $this->checkAccess('service_zone_management', 'update'));
+        Gate::define('service_zone_delete', fn () => $this->checkAccess('service_zone_management', 'delete'));
+
+        Gate::define('driver_application_view', fn () => $this->checkAccess('user_management', 'view'));
+        Gate::define('driver_application_edit', fn () => $this->checkAccess('user_management', 'update'));
+
     }
 
     private function checkAccess($module_name, $action){
-//        dd(in_array($module_name, auth()->user()->role->modules));
+        $user = auth()->user();
+        if ($user->user_type === 'super-admin') {
+            return true;
+        }
 
-        return auth()->user()->user_type == 'super-admin' ||
-            (in_array($module_name, auth()->user()->role->modules) && auth()->user()->moduleAccess->where('module_name', $module_name)->first()?->$action);
+        $role = $user->role;
+        if (!$role || !is_array($role->modules)) {
+            return false;
+        }
+
+        return in_array($module_name, $role->modules)
+            && $user->moduleAccess->where('module_name', $module_name)->first()?->$action;
     }
 }

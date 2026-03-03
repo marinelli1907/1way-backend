@@ -30,4 +30,20 @@ return [
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
 
+    'google' => [
+        'maps_key' => env('GOOGLE_MAPS_API_KEY'),
+    ],
+
+    'xai' => [
+        'key'      => env('XAI_API_KEY'),
+        'base_url' => env('AI_BASE_URL', 'https://api.x.ai/v1'),
+        'model'    => env('AI_MODEL', 'grok-2'),
+    ],
+
+    'amadeus' => [
+        'client_id'     => env('AMADEUS_CLIENT_ID'),
+        'client_secret' => env('AMADEUS_CLIENT_SECRET'),
+        'env'           => env('AMADEUS_ENV', 'test'),
+    ],
+
 ];

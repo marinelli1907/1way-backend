@@ -69,46 +69,48 @@ class DriverController extends BaseController
     {
         $this->authorize('user_add');
 
-        $firstLevel = $this->driverLevelService->findOneBy(criteria: ['user_type' => DRIVER, 'sequence' => 1]);
+        try {
+            $firstLevel = $this->driverLevelService->findOneBy(criteria: ['user_type' => DRIVER, 'sequence' => 1]);
 
-        if (!$firstLevel) {
-            $firstLevel = $this->driverLevelService->findOneBy(
-                criteria: ['user_type' => DRIVER],
-                orderBy: ['sequence' => 'asc']
-            );
-        }
-
-        if (!$firstLevel) {
-            try {
-                \Illuminate\Support\Facades\Artisan::call('drivers:ensure-levels');
+            if (!$firstLevel) {
                 $firstLevel = $this->driverLevelService->findOneBy(
                     criteria: ['user_type' => DRIVER],
                     orderBy: ['sequence' => 'asc']
                 );
-            } catch (\Throwable $e) {
-                \Illuminate\Support\Facades\Log::error('Add Driver ensure-levels failed: ' . $e->getMessage());
             }
-        }
 
-        if (!$firstLevel) {
-            Toastr::error('No driver levels found. Please create one first or run: php artisan drivers:ensure-levels --force');
-            return back()->withInput();
-        }
+            if (!$firstLevel) {
+                try {
+                    \Illuminate\Support\Facades\Artisan::call('drivers:ensure-levels');
+                    $firstLevel = $this->driverLevelService->findOneBy(
+                        criteria: ['user_type' => DRIVER],
+                        orderBy: ['sequence' => 'asc']
+                    );
+                } catch (\Throwable $e) {
+                    \Illuminate\Support\Facades\Log::error('Add Driver ensure-levels failed: ' . $e->getMessage());
+                }
+            }
 
-        $request->merge(['user_level_id' => $firstLevel->id]);
+            if (!$firstLevel) {
+                Toastr::error('No driver levels found. Please create one first or run: php artisan drivers:ensure-levels --force');
+                return back()->withInput()->with('error', 'No driver levels found. Please create one first.');
+            }
 
-        try {
-            $this->driverService->create(data: $request->validated());
+            $validated = $request->validated();
+            $validated['user_level_id'] = $firstLevel->id;
+
+            $this->driverService->create(data: $validated);
+
+            Toastr::success(DRIVER_STORE_200['message']);
+            return redirect(route('admin.driver.index'));
+
         } catch (\Throwable $e) {
             \Illuminate\Support\Facades\Log::error('Add Driver error: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
             ]);
             Toastr::error('Failed to create driver: ' . $e->getMessage());
-            return back()->withInput();
+            return back()->withInput()->with('error', 'Failed to create driver: ' . $e->getMessage());
         }
-
-        Toastr::success(DRIVER_STORE_200['message']);
-        return redirect(route('admin.driver.index'));
     }
 
     public function show($id, Request $request): Renderable|RedirectResponse
@@ -138,9 +140,20 @@ class DriverController extends BaseController
     public function update(DriverStoreOrUpdateRequest $request, $id): RedirectResponse
     {
         $this->authorize('user_edit');
-        $data = array_merge($request->validated(), ['type' => 'web']);
-        $this->driverService->update(id: $id, data: $data);
-        Toastr::success(DRIVER_UPDATE_200['message']);
+
+        try {
+            $data = array_merge($request->validated(), ['type' => 'web']);
+            $this->driverService->update(id: $id, data: $data);
+            Toastr::success(DRIVER_UPDATE_200['message']);
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::error('Update Driver error: ' . $e->getMessage(), [
+                'driver_id' => $id,
+                'trace' => $e->getTraceAsString(),
+            ]);
+            Toastr::error('Failed to update driver: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Failed to update driver: ' . $e->getMessage());
+        }
+
         return back();
     }
 
@@ -149,12 +162,50 @@ class DriverController extends BaseController
     {
         $this->authorize('user_delete');
         $driver = $this->driverService->findOne($id);
-        if(count($driver->getDriverLastTrip())!=0|| $driver?->userAccount->payable_balance>0 || $driver?->userAccount->pending_balance>0 || $driver?->userAccount->receivable_balance>0){
-            Toastr::success(translate("Sorry you can't delete this driver, because there are ongoing rides or payment due this driver."));
+        if (!$driver) {
+            Toastr::warning(translate('Driver not found'));
+            return back();
+        }
+        $hasActiveTrips = count($driver->getDriverLastTrip()) != 0;
+        $hasBalance = ($driver->userAccount?->payable_balance ?? 0) > 0
+            || ($driver->userAccount?->pending_balance ?? 0) > 0
+            || ($driver->userAccount?->receivable_balance ?? 0) > 0;
+        if ($hasActiveTrips || $hasBalance) {
+            Toastr::warning(translate("Sorry you can't delete this driver, because there are ongoing rides or payment due this driver."));
             return back();
         }
         $this->driverService->delete(id: $id);
         Toastr::success(DRIVER_DELETE_200['message']);
+        return back();
+    }
+
+    public function bulkDestroy(Request $request): RedirectResponse
+    {
+        $this->authorize('user_delete');
+        $ids = $request->input('ids', []);
+        if (empty($ids)) {
+            Toastr::warning(translate('No drivers selected'));
+            return back();
+        }
+        $deleted = 0;
+        $skipped = 0;
+        foreach ($ids as $id) {
+            $driver = $this->driverService->findOne($id);
+            if (!$driver) { $skipped++; continue; }
+            $hasActiveTrips = count($driver->getDriverLastTrip()) != 0;
+            $hasBalance = ($driver->userAccount?->payable_balance ?? 0) > 0
+                || ($driver->userAccount?->pending_balance ?? 0) > 0
+                || ($driver->userAccount?->receivable_balance ?? 0) > 0;
+            if ($hasActiveTrips || $hasBalance) { $skipped++; continue; }
+            $this->driverService->delete(id: $id);
+            $deleted++;
+        }
+        if ($deleted > 0) {
+            Toastr::success($deleted . ' driver(s) deleted successfully.');
+        }
+        if ($skipped > 0) {
+            Toastr::warning($skipped . ' driver(s) skipped (active trips or balance due).');
+        }
         return back();
     }
 

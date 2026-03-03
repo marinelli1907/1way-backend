@@ -41,7 +41,10 @@ class RideRequestCreate extends FormRequest
             'flight_number' => 'required_if:flight_input_type,flight_number|nullable|string|max:30',
             'flight_date' => 'required_if:flight_input_type,flight_number|nullable|date_format:Y-m-d',
             'reservation_code' => 'required_if:flight_input_type,reservation|nullable|string|max:30',
-            'last_name' => 'required_if:flight_input_type,reservation|nullable|string|max:120'
+            'last_name' => 'required_if:flight_input_type,reservation|nullable|string|max:120',
+            'passengers_count' => 'nullable|integer|min:0|max:20',
+            'pets_count' => 'nullable|integer|min:0|max:5',
+            'scheduled_at' => 'nullable|date_format:Y-m-d H:i:s',
         ];
     }
 
